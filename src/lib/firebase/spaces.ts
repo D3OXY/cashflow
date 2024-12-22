@@ -1,7 +1,7 @@
-import { collection, doc, getDoc, getDocs, query, setDoc, where, deleteDoc } from "firebase/firestore";
+import { collection, doc, getDoc, getDocs, query, setDoc, where, deleteDoc, updateDoc } from "firebase/firestore";
 import { getDb } from "./config";
 import { getAuth } from "firebase/auth";
-import type { Space } from "../types/space";
+import type { Space, Category } from "../types/space";
 
 const SPACES_COLLECTION = "spaces";
 
@@ -9,6 +9,7 @@ export interface CreateSpaceData {
     name: string;
     currency: "INR" | "USD" | "EUR";
     icon: string;
+    categories?: Category[];
 }
 
 export async function createSpaceInDb(data: CreateSpaceData, userId: string): Promise<Space> {
@@ -22,7 +23,7 @@ export async function createSpaceInDb(data: CreateSpaceData, userId: string): Pr
         name: data.name,
         icon: data.icon || "💰",
         currency: data.currency,
-        categories: [],
+        categories: data.categories || getDefaultCategories(),
         createdAt: now,
         updatedAt: now,
         userId,
@@ -81,4 +82,125 @@ export async function deleteSpace(spaceId: string): Promise<void> {
     }
 
     await deleteDoc(spaceRef);
+}
+
+export async function updateSpace(id: string, data: Partial<Space>): Promise<void> {
+    const auth = getAuth();
+    const user = auth.currentUser;
+    if (!user) {
+        throw new Error("User not authenticated");
+    }
+
+    const db = getDb();
+    const spaceRef = doc(db, "spaces", id);
+    const spaceDoc = await getDoc(spaceRef);
+
+    if (!spaceDoc.exists()) {
+        throw new Error("Space not found");
+    }
+
+    if (spaceDoc.data().userId !== user.uid) {
+        throw new Error("Not authorized");
+    }
+
+    await updateDoc(spaceRef, {
+        ...data,
+        updatedAt: new Date().toISOString(),
+    });
+}
+
+export async function addCategory(spaceId: string, category: Omit<Category, "id">): Promise<void> {
+    const auth = getAuth();
+    const user = auth.currentUser;
+    if (!user) {
+        throw new Error("User not authenticated");
+    }
+
+    const db = getDb();
+    const spaceRef = doc(db, "spaces", spaceId);
+    const spaceDoc = await getDoc(spaceRef);
+
+    if (!spaceDoc.exists()) {
+        throw new Error("Space not found");
+    }
+
+    if (spaceDoc.data().userId !== user.uid) {
+        throw new Error("Not authorized");
+    }
+
+    const space = spaceDoc.data() as Space;
+    const newCategory: Category = {
+        id: crypto.randomUUID(),
+        ...category,
+    };
+
+    await updateDoc(spaceRef, {
+        categories: [...space.categories, newCategory],
+        updatedAt: new Date().toISOString(),
+    });
+}
+
+export async function deleteCategory(spaceId: string, categoryId: string): Promise<void> {
+    const auth = getAuth();
+    const user = auth.currentUser;
+    if (!user) {
+        throw new Error("User not authenticated");
+    }
+
+    const db = getDb();
+    const spaceRef = doc(db, "spaces", spaceId);
+    const spaceDoc = await getDoc(spaceRef);
+
+    if (!spaceDoc.exists()) {
+        throw new Error("Space not found");
+    }
+
+    if (spaceDoc.data().userId !== user.uid) {
+        throw new Error("Not authorized");
+    }
+
+    const space = spaceDoc.data() as Space;
+    await updateDoc(spaceRef, {
+        categories: space.categories.filter((c) => c.id !== categoryId),
+        updatedAt: new Date().toISOString(),
+    });
+}
+
+export async function updateCategory(spaceId: string, categoryId: string, data: Partial<Category>): Promise<void> {
+    const auth = getAuth();
+    const user = auth.currentUser;
+    if (!user) {
+        throw new Error("User not authenticated");
+    }
+
+    const db = getDb();
+    const spaceRef = doc(db, "spaces", spaceId);
+    const spaceDoc = await getDoc(spaceRef);
+
+    if (!spaceDoc.exists()) {
+        throw new Error("Space not found");
+    }
+
+    if (spaceDoc.data().userId !== user.uid) {
+        throw new Error("Not authorized");
+    }
+
+    const space = spaceDoc.data() as Space;
+    await updateDoc(spaceRef, {
+        categories: space.categories.map((c) => (c.id === categoryId ? { ...c, ...data } : c)),
+        updatedAt: new Date().toISOString(),
+    });
+}
+
+function getDefaultCategories(): Category[] {
+    return [
+        { id: "1", name: "Salary", type: "Income", color: "#22c55e" },
+        { id: "2", name: "Food", type: "Expense", color: "#ef4444" },
+        { id: "3", name: "Transport", type: "Expense", color: "#3b82f6" },
+        { id: "4", name: "Shopping", type: "Expense", color: "#f59e0b" },
+        { id: "5", name: "Bills", type: "Expense", color: "#8b5cf6" },
+        { id: "6", name: "Entertainment", type: "Expense", color: "#ec4899" },
+        { id: "7", name: "Investment", type: "Both", color: "#10b981" },
+        { id: "8", name: "Others", type: "Both", color: "#6b7280" },
+    ];
 }

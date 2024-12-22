@@ -1,11 +1,9 @@
-import type { LucideIcon } from "lucide-react";
-
 export interface Category {
     id: string;
     name: string;
-    type: "Income" | "Expense";
-    color: string;
-    icon: LucideIcon;
+    type: "Income" | "Expense" | "Both";
+    color?: string;
+    icon?: string;
 }
 
 export interface Space {
@@ -17,15 +15,20 @@ export interface Space {
     createdAt: string;
     updatedAt: string;
     userId: string;
-    settings?: SpaceSettings;
+    settings: {
+        defaultView: "daily" | "weekly" | "monthly" | "yearly";
+        startOfWeek: 0 | 1 | 2 | 3 | 4 | 5 | 6;
+        defaultTransactionType: "Income" | "Expense";
+        showRunningBalance: boolean;
+        categorySortOrder: "alphabetical" | "custom" | "usage";
+    };
 }
 
-export interface SpaceSettings {
-    defaultView: "daily" | "weekly" | "monthly" | "yearly";
-    startOfWeek: 0 | 1 | 2 | 3 | 4 | 5 | 6; // Sunday to Saturday
-    defaultTransactionType: "Income" | "Expense";
-    showRunningBalance: boolean;
-    categorySortOrder: "alphabetical" | "custom" | "usage";
+export interface CreateSpaceData {
+    name: string;
+    icon: string;
+    currency: "INR" | "USD" | "EUR";
+    categories?: Category[];
 }
 
 export interface Transaction {

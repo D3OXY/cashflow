@@ -20,6 +20,8 @@ export async function createTransaction(data: CreateTransactionData): Promise<Tr
     const newTransaction: Transaction = {
         id: newTransactionRef.id,
         ...data,
+        note: data.note || "",
+        metadata: data.metadata || {},
         createdAt: now,
         updatedAt: now,
         status: data.status || "pending",
