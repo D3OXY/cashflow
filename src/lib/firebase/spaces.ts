@@ -7,6 +7,7 @@ const SPACES_COLLECTION = "spaces";
 export interface CreateSpaceData {
     name: string;
     currency: Space["currency"];
+    icon: string;
 }
 
 export async function createSpace(data: CreateSpaceData): Promise<Space> {
@@ -22,7 +23,7 @@ export async function createSpace(data: CreateSpaceData): Promise<Space> {
         id: doc(collection(db, SPACES_COLLECTION)).id, // Generate a new ID
         name: data.name,
         currency: data.currency,
-        icon: "💰", // Default icon
+        icon: data.icon,
         categories: [], // Default empty categories
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),

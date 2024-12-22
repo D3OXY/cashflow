@@ -11,20 +11,38 @@ import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useSpace } from "@/context/space";
 import { toast } from "sonner";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+
+const SPACE_ICONS = [
+    { value: "💰", label: "Money" },
+    { value: "🏠", label: "Home" },
+    { value: "💼", label: "Work" },
+    { value: "🚗", label: "Car" },
+    { value: "✈️", label: "Travel" },
+    { value: "🎓", label: "Study" },
+    { value: "🏦", label: "Bank" },
+    { value: "💳", label: "Card" },
+    { value: "🎯", label: "Goals" },
+    { value: "📊", label: "Stats" },
+    { value: "🛒", label: "Shop" },
+    { value: "🏪", label: "Store" },
+] as const;
 
 export function SpaceSwitcher() {
     const { spaces, currentSpace, switchSpace, createNewSpace } = useSpace();
     const [open, setOpen] = React.useState(false);
     const [showNewSpaceDialog, setShowNewSpaceDialog] = React.useState(false);
     const [newSpaceName, setNewSpaceName] = React.useState("");
+    const [selectedIcon, setSelectedIcon] = React.useState<string>(SPACE_ICONS[0].value);
 
     const createSpace = async () => {
         if (!newSpaceName) return;
 
         try {
-            await createNewSpace({ name: newSpaceName, currency: "USD" });
+            await createNewSpace({ name: newSpaceName, currency: "USD", icon: selectedIcon });
             setShowNewSpaceDialog(false);
             setNewSpaceName("");
+            setSelectedIcon(SPACE_ICONS[0].value);
             toast.success("Space created successfully");
         } catch (error) {
             console.error("Failed to create space:", error);
@@ -41,10 +59,10 @@ export function SpaceSwitcher() {
                         role="combobox"
                         aria-expanded={open}
                         aria-label="Select a space"
-                        className="w-full h-16 justify-between px-4 hover:bg-sidebar-accent text-sidebar-foreground"
+                        className="w-full h-14 justify-between px-4 hover:bg-sidebar-accent text-sidebar-foreground"
                     >
-                        <div className="flex flex-col items-start gap-1">
-                            <span className="text-xs text-sidebar-foreground/60 font-medium tracking-wider">SPACE</span>
+                        <div className="flex items-center gap-2">
+                            <span className="text-xl">{currentSpace?.icon || "💰"}</span>
                             <span className="font-medium truncate">{currentSpace?.name || "Select a space"}</span>
                         </div>
                         <ChevronsUpDown className="h-4 w-4 shrink-0 text-sidebar-foreground/50" />
@@ -66,6 +84,7 @@ export function SpaceSwitcher() {
                                             }}
                                             className="text-sm"
                                         >
+                                            <span className="text-xl mr-2">{space.icon}</span>
                                             {space.name}
                                             <Check className={cn("ml-auto h-4 w-4", currentSpace?.id === space.id ? "opacity-100" : "opacity-0")} />
                                         </CommandItem>
@@ -96,6 +115,23 @@ export function SpaceSwitcher() {
                     <DialogDescription>Add a new space to manage your finances.</DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 py-4">
+                    <div className="space-y-2">
+                        <Label>Icon</Label>
+                        <RadioGroup value={selectedIcon} onValueChange={setSelectedIcon} className="grid grid-cols-6 gap-2">
+                            {SPACE_ICONS.map((icon) => (
+                                <div key={icon.value}>
+                                    <RadioGroupItem value={icon.value} id={icon.value} className="peer sr-only" />
+                                    <Label
+                                        htmlFor={icon.value}
+                                        className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-transparent p-2 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
+                                    >
+                                        <span className="text-2xl">{icon.value}</span>
+                                        <span className="text-[10px] font-normal text-muted-foreground mt-1">{icon.label}</span>
+                                    </Label>
+                                </div>
+                            ))}
+                        </RadioGroup>
+                    </div>
                     <div className="space-y-2">
                         <Label htmlFor="name">Space Name</Label>
                         <Input id="name" placeholder="e.g., Personal Finance" value={newSpaceName} onChange={(e) => setNewSpaceName(e.target.value)} />

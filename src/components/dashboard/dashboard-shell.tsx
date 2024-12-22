@@ -31,7 +31,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         <SidebarProvider defaultOpen>
             <div className="flex min-h-screen w-full">
                 <Sidebar className="border-r border-sidebar-border shrink-0 flex flex-col w-64 bg-sidebar-background text-sidebar-foreground">
-                    <SidebarHeader className="border-b border-sidebar-border/10 flex-none">
+                    <SidebarHeader className="border-b border-sidebar-border h-14">
                         <SpaceSwitcher />
                     </SidebarHeader>
 
@@ -96,8 +96,8 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                 </Sidebar>
 
                 <div className="flex-1 w-0 min-w-0">
-                    <header className="sticky top-0 z-10 bg-background border-b border-border">
-                        <div className="flex h-16 items-center gap-4 px-6">
+                    <header className="sticky top-0 z-10 bg-background border-b border-border h-14">
+                        <div className="flex h-full items-center gap-4 px-6">
                             <SidebarTrigger>
                                 <Button variant="ghost" size="icon">
                                     <Menu className="h-5 w-5" />
