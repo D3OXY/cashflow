@@ -4,7 +4,7 @@ import { useTransaction } from "@/context/transaction";
 import { useSpace } from "@/context/space";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { format, startOfMonth, endOfMonth, isWithinInterval } from "date-fns";
+import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, startOfDay, endOfDay, startOfYear, endOfYear, isWithinInterval } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -24,10 +24,31 @@ export default function TransactionList() {
     const { currentSpace } = useSpace();
     const [date, setDate] = useState<DateRange | undefined>(() => {
         const today = new Date();
-        return {
-            from: startOfMonth(today),
-            to: endOfMonth(today),
-        };
+        const defaultView = currentSpace?.settings?.defaultView || "monthly";
+
+        switch (defaultView) {
+            case "daily":
+                return {
+                    from: startOfDay(today),
+                    to: endOfDay(today),
+                };
+            case "weekly":
+                return {
+                    from: startOfWeek(today, { weekStartsOn: currentSpace?.settings?.startOfWeek || 1 }),
+                    to: endOfWeek(today, { weekStartsOn: currentSpace?.settings?.startOfWeek || 1 }),
+                };
+            case "yearly":
+                return {
+                    from: startOfYear(today),
+                    to: endOfYear(today),
+                };
+            case "monthly":
+            default:
+                return {
+                    from: startOfMonth(today),
+                    to: endOfMonth(today),
+                };
+        }
     });
 
     const handleDelete = async (id: string) => {
