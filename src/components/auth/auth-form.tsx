@@ -1,22 +1,28 @@
 "use client";
 
-import { useState } from "react";
-import { useForm } from "react-hook-form";
+import * as React from "react";
+import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { Card } from "@/components/ui/card";
+import { useForm } from "react-hook-form";
+import * as z from "zod";
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { useAuth } from "@/context/auth";
+import { doc, setDoc } from "firebase/firestore";
+import { getDb } from "@/lib/firebase/config";
+import { Card } from "@/components/ui/card";
 import { FirebaseError } from "firebase/app";
-const authSchema = z.object({
-    email: z.string().email("Invalid email address"),
-    password: z.string().min(6, "Password must be at least 6 characters"),
-});
 
-type AuthFormData = z.infer<typeof authSchema>;
+const formSchema = z.object({
+    email: z.string().email({
+        message: "Please enter a valid email address.",
+    }),
+    password: z.string().min(6, {
+        message: "Password must be at least 6 characters.",
+    }),
+});
 
 interface AuthFormProps {
     mode: "login" | "signup";
@@ -24,28 +30,40 @@ interface AuthFormProps {
 }
 
 export function AuthForm({ mode, onSuccess }: AuthFormProps) {
-    const [isLoading, setIsLoading] = useState(false);
+    const router = useRouter();
     const { signIn, signUp } = useAuth();
+    const [isLoading, setIsLoading] = React.useState(false);
 
-    const form = useForm<AuthFormData>({
-        resolver: zodResolver(authSchema),
+    const form = useForm<z.infer<typeof formSchema>>({
+        resolver: zodResolver(formSchema),
         defaultValues: {
             email: "",
             password: "",
         },
     });
 
-    const onSubmit = async (data: AuthFormData) => {
+    async function onSubmit(data: z.infer<typeof formSchema>) {
+        setIsLoading(true);
+
         try {
-            setIsLoading(true);
             if (mode === "login") {
                 await signIn(data.email, data.password);
-                toast.success("Successfully logged in");
+                toast.success("Logged in successfully");
             } else {
-                await signUp(data.email, data.password);
-                toast.success("Successfully signed up");
+                const userCredential = await signUp(data.email, data.password);
+                // Create user document in Firestore
+                const db = getDb();
+                await setDoc(doc(db, "users", userCredential.user.uid), {
+                    email: data.email,
+                    displayName: "",
+                    photoURL: null,
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString(),
+                });
+                toast.success("Account created successfully");
             }
             onSuccess?.();
+            router.push("/");
         } catch (error) {
             console.error("Authentication error:", error);
             if (error instanceof FirebaseError) {
@@ -74,7 +92,7 @@ export function AuthForm({ mode, onSuccess }: AuthFormProps) {
         } finally {
             setIsLoading(false);
         }
-    };
+    }
 
     return (
         <Card className="p-6">
@@ -93,7 +111,6 @@ export function AuthForm({ mode, onSuccess }: AuthFormProps) {
                             </FormItem>
                         )}
                     />
-
                     <FormField
                         control={form.control}
                         name="password"
@@ -107,17 +124,16 @@ export function AuthForm({ mode, onSuccess }: AuthFormProps) {
                             </FormItem>
                         )}
                     />
-
                     <Button type="submit" className="w-full" disabled={isLoading}>
                         {isLoading ? (
                             <div className="flex items-center gap-2">
                                 <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                                {mode === "login" ? "Logging in..." : "Signing up..."}
+                                {mode === "login" ? "Logging in..." : "Creating account..."}
                             </div>
                         ) : mode === "login" ? (
                             "Log in"
                         ) : (
-                            "Sign up"
+                            "Create account"
                         )}
                     </Button>
                 </form>

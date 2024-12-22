@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
-import type { User } from "firebase/auth";
+import type { User, UserCredential } from "firebase/auth";
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut as firebaseSignOut, onAuthStateChanged } from "firebase/auth";
 import { useAppConfig } from "@/context/app-config";
 import { initializeFirebase, getFirebase } from "@/lib/firebase/config";
@@ -9,8 +9,8 @@ import { initializeFirebase, getFirebase } from "@/lib/firebase/config";
 interface AuthContextValue {
     user: User | null;
     isLoading: boolean;
-    signIn: (email: string, password: string) => Promise<void>;
-    signUp: (email: string, password: string) => Promise<void>;
+    signIn: (email: string, password: string) => Promise<UserCredential>;
+    signUp: (email: string, password: string) => Promise<UserCredential>;
     signOut: () => Promise<void>;
 }
 
@@ -48,12 +48,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const signIn = async (email: string, password: string) => {
         const { auth } = getFirebase();
-        await signInWithEmailAndPassword(auth, email, password);
+        return await signInWithEmailAndPassword(auth, email, password);
     };
 
     const signUp = async (email: string, password: string) => {
         const { auth } = getFirebase();
-        await createUserWithEmailAndPassword(auth, email, password);
+        return await createUserWithEmailAndPassword(auth, email, password);
     };
 
     const signOut = async () => {

@@ -1,12 +1,12 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
-import { useAuth } from "./auth";
+import { useAuth } from "@/context/auth";
 import { collection, onSnapshot, query, where } from "firebase/firestore";
 import { getDb } from "@/lib/firebase/config";
 import type { Space } from "@/lib/types/space";
-import { createSpace as createSpaceInDb } from "@/lib/firebase/spaces";
 import type { CreateSpaceData } from "@/lib/firebase/spaces";
+import { createSpaceInDb } from "@/lib/firebase/spaces";
 
 interface SpaceContextType {
     spaces: Space[];
@@ -23,15 +23,17 @@ const SpaceContext = createContext<SpaceContextType | null>(null);
 export function SpaceProvider({ children }: { children: React.ReactNode }) {
     const { user } = useAuth();
     const [spaces, setSpaces] = useState<Space[]>([]);
-    const [currentSpace, setCurrentSpace] = useState<Space | null>(null);
+    const [currentSpaceId, setCurrentSpaceId] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<Error | null>(null);
 
-    // Set up real-time listener for spaces
+    // Derive currentSpace from spaces and currentSpaceId
+    const currentSpace = currentSpaceId ? spaces.find((s) => s.id === currentSpaceId) || null : spaces[0] || null;
+
     useEffect(() => {
         if (!user) {
             setSpaces([]);
-            setCurrentSpace(null);
+            setCurrentSpaceId(null);
             setIsLoading(false);
             return;
         }
@@ -53,19 +55,13 @@ export function SpaceProvider({ children }: { children: React.ReactNode }) {
 
                 setSpaces(updatedSpaces);
 
-                // Update current space if it exists in the updated spaces
-                if (currentSpace) {
-                    const updatedCurrentSpace = updatedSpaces.find((s) => s.id === currentSpace.id);
-                    if (updatedCurrentSpace) {
-                        setCurrentSpace(updatedCurrentSpace);
-                    } else if (updatedSpaces.length > 0) {
-                        // If current space no longer exists, switch to the first available space
-                        setCurrentSpace(updatedSpaces[0]);
-                    } else {
-                        setCurrentSpace(null);
-                    }
-                } else if (updatedSpaces.length > 0) {
-                    setCurrentSpace(updatedSpaces[0]);
+                // If no current space is selected and we have spaces, select the first one
+                if (!currentSpaceId && updatedSpaces.length > 0) {
+                    setCurrentSpaceId(updatedSpaces[0].id);
+                }
+                // If current space no longer exists, switch to the first available space
+                else if (currentSpaceId && !updatedSpaces.find((s) => s.id === currentSpaceId)) {
+                    setCurrentSpaceId(updatedSpaces.length > 0 ? updatedSpaces[0].id : null);
                 }
 
                 setIsLoading(false);
@@ -79,19 +75,15 @@ export function SpaceProvider({ children }: { children: React.ReactNode }) {
         );
 
         return () => unsubscribe();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [user]);
+    }, [user, currentSpaceId]);
 
     const switchSpace = (spaceId: string) => {
-        const space = spaces.find((s) => s.id === spaceId);
-        if (space) {
-            setCurrentSpace(space);
-        }
+        setCurrentSpaceId(spaceId);
     };
 
     const createNewSpace = async (data: CreateSpaceData) => {
         if (!user) throw new Error("No user logged in");
-        const newSpace = await createSpaceInDb(data);
+        const newSpace = await createSpaceInDb(data, user.uid);
         return newSpace;
     };
 

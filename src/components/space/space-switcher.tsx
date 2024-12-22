@@ -19,13 +19,17 @@ export function SpaceSwitcher() {
     const [open, setOpen] = React.useState(false);
     const [showNewSpaceDialog, setShowNewSpaceDialog] = React.useState(false);
     const [newSpaceName, setNewSpaceName] = React.useState("");
-    const [selectedIcon, setSelectedIcon] = React.useState<string>(SPACE_ICONS[0].value);
+    const [selectedIcon, setSelectedIcon] = React.useState<string>("💰");
 
     const createSpace = async () => {
         if (!newSpaceName) return;
 
         try {
-            await createNewSpace({ name: newSpaceName, currency: "USD", icon: selectedIcon });
+            await createNewSpace({
+                name: newSpaceName,
+                currency: "USD",
+                icon: selectedIcon || "💰",
+            });
             setShowNewSpaceDialog(false);
             setNewSpaceName("");
             setSelectedIcon(SPACE_ICONS[0].value);

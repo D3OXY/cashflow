@@ -6,34 +6,36 @@ const SPACES_COLLECTION = "spaces";
 
 export interface CreateSpaceData {
     name: string;
-    currency: Space["currency"];
+    currency: "INR" | "USD" | "EUR";
     icon: string;
 }
 
-export async function createSpace(data: CreateSpaceData): Promise<Space> {
-    const auth = getFirebaseAuth();
-    const user = auth.currentUser;
-
-    if (!user) {
-        throw new Error("User not authenticated");
-    }
-
+export async function createSpaceInDb(data: CreateSpaceData, userId: string): Promise<Space> {
     const db = getDb();
-    const spaceData: Space = {
-        id: doc(collection(db, SPACES_COLLECTION)).id, // Generate a new ID
+    const spacesCollection = collection(db, "spaces");
+    const newSpaceRef = doc(spacesCollection);
+
+    const now = new Date().toISOString();
+    const newSpace: Space = {
+        id: newSpaceRef.id,
         name: data.name,
+        icon: data.icon || "💰",
         currency: data.currency,
-        icon: data.icon,
-        categories: [], // Default empty categories
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        userId: user.uid, // Add user ID to space
+        categories: [],
+        createdAt: now,
+        updatedAt: now,
+        userId,
+        settings: {
+            defaultView: "monthly",
+            startOfWeek: 1,
+            defaultTransactionType: "Expense",
+            showRunningBalance: true,
+            categorySortOrder: "alphabetical",
+        },
     };
 
-    // Create the space document with the generated ID
-    await setDoc(doc(db, SPACES_COLLECTION, spaceData.id), spaceData);
-
-    return spaceData;
+    await setDoc(newSpaceRef, newSpace);
+    return newSpace;
 }
 
 export async function getSpace(id: string): Promise<Space | null> {
