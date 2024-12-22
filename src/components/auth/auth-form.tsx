@@ -10,7 +10,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { useAuth } from "@/context/auth";
-
+import { FirebaseError } from "firebase/app";
 const authSchema = z.object({
     email: z.string().email("Invalid email address"),
     password: z.string().min(6, "Password must be at least 6 characters"),
@@ -48,7 +48,29 @@ export function AuthForm({ mode, onSuccess }: AuthFormProps) {
             onSuccess?.();
         } catch (error) {
             console.error("Authentication error:", error);
-            toast.error(mode === "login" ? "Failed to log in" : "Failed to sign up");
+            if (error instanceof FirebaseError) {
+                const code = error.code;
+                // Map Firebase auth error codes to user-friendly messages
+                if (code === "auth/user-not-found" || code === "auth/wrong-password") {
+                    toast.error("Invalid email or password");
+                } else if (code === "auth/email-already-in-use") {
+                    toast.error("This email is already registered");
+                } else if (code === "auth/invalid-email") {
+                    toast.error("Please enter a valid email address");
+                } else if (code === "auth/invalid-password") {
+                    toast.error("Password must be at least 6 characters");
+                } else if (code.includes("auth/too-many-requests")) {
+                    toast.error("Too many attempts. Please try again later");
+                } else if (code === "auth/operation-not-allowed") {
+                    toast.error("This sign-in method is not enabled");
+                } else if (code === "auth/network-request-failed") {
+                    toast.error("Network error. Please check your connection");
+                } else {
+                    toast.error(code);
+                }
+            } else {
+                toast.error("An unexpected error occurred");
+            }
         } finally {
             setIsLoading(false);
         }
