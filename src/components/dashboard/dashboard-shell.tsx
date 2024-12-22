@@ -40,7 +40,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
     return (
         <div className="h-screen w-full flex">
             <aside className={cn("flex flex-col h-screen border-r bg-sidebar-background transition-all duration-300 ease-in-out", sidebarOpen ? "w-64" : "w-14")}>
-                <div className="h-14 border-b flex items-center px-4">
+                <div className="h-14 border-b flex items-center justify-center">
                     <Button variant="ghost" size="icon" onClick={toggleSidebar} className="text-sidebar-foreground">
                         <Menu className="h-5 w-5" />
                     </Button>
