@@ -49,7 +49,7 @@ export function SpaceSwitcher() {
                         role="combobox"
                         aria-expanded={open}
                         aria-label="Select a space"
-                        className="w-full h-14 justify-between px-4 hover:bg-sidebar-accent text-sidebar-foreground"
+                        className="w-full  justify-between px-4 hover:bg-sidebar-accent text-sidebar-foreground"
                     >
                         <div className="flex items-center gap-2">
                             <span className="text-xl">{currentSpace?.icon || "💰"}</span>
@@ -58,7 +58,7 @@ export function SpaceSwitcher() {
                         <ChevronsUpDown className="h-4 w-4 shrink-0 text-sidebar-foreground/50" />
                     </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-[200px] p-0" align="end" side="right" sideOffset={8}>
+                <PopoverContent className="w-[200px] p-0" align="center" side="bottom" sideOffset={8}>
                     <Command className="border border-sidebar-border/10">
                         <CommandList>
                             <CommandInput placeholder="Search spaces..." className="h-9" />
