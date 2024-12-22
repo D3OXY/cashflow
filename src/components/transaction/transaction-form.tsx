@@ -17,6 +17,7 @@ import { CalendarIcon, Loader2 } from "lucide-react";
 import { useTransaction } from "@/context/transaction";
 import { useSpace } from "@/context/space";
 import type { Transaction } from "@/lib/types/transaction";
+import { toast } from "sonner";
 
 const transactionSchema = z.object({
     type: z.enum(["Income", "Expense"]),
@@ -52,21 +53,30 @@ export function TransactionForm({ transaction, onSuccess }: TransactionFormProps
     });
 
     const onSubmit = async (data: TransactionFormData) => {
-        if (!currentSpace) return;
+        if (!currentSpace) {
+            console.error("No current space found");
+            return;
+        }
 
         try {
             setIsSubmitting(true);
+            console.log("Submitting transaction form with data:", data);
+
             if (transaction) {
                 await updateTransaction(transaction.id, {
                     ...data,
                     date: data.date.toISOString(),
                 });
+                toast.success("Transaction updated successfully");
             } else {
-                await createTransaction({
+                const createData = {
                     ...data,
                     date: data.date.toISOString(),
                     spaceId: currentSpace.id,
-                });
+                };
+                console.log("Creating transaction with data:", createData);
+                await createTransaction(createData);
+                toast.success("Transaction created successfully");
             }
             onSuccess?.();
             if (!transaction) {
@@ -79,6 +89,11 @@ export function TransactionForm({ transaction, onSuccess }: TransactionFormProps
                     status: "cleared",
                 });
             }
+        } catch (error) {
+            console.error("Failed to submit transaction:", error);
+            toast.error("Failed to submit transaction", {
+                description: error instanceof Error ? error.message : "Please try again later",
+            });
         } finally {
             setIsSubmitting(false);
         }

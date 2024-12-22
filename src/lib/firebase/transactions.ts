@@ -12,6 +12,8 @@ export async function createTransaction(data: CreateTransactionData): Promise<Tr
         throw new Error("User not authenticated");
     }
 
+    console.log("Creating transaction with data:", data);
+
     const db = getDb();
     const transactionsCollection = collection(db, TRANSACTIONS_COLLECTION);
     const newTransactionRef = doc(transactionsCollection);
@@ -27,6 +29,7 @@ export async function createTransaction(data: CreateTransactionData): Promise<Tr
         status: data.status || "pending",
     };
 
+    console.log("Saving transaction:", newTransaction);
     await setDoc(newTransactionRef, newTransaction);
     return newTransaction;
 }
@@ -44,11 +47,22 @@ export async function getSpaceTransactions(spaceId: string): Promise<Transaction
         throw new Error("User not authenticated");
     }
 
+    console.log("Fetching transactions for space:", spaceId);
+
     const db = getDb();
     const transactionsQuery = query(collection(db, TRANSACTIONS_COLLECTION), where("spaceId", "==", spaceId), orderBy("date", "desc"), orderBy("createdAt", "desc"));
 
     const snapshot = await getDocs(transactionsQuery);
-    return snapshot.docs.map((doc) => doc.data() as Transaction);
+    const transactions = snapshot.docs.map(
+        (doc) =>
+            ({
+                ...doc.data(),
+                id: doc.id,
+            } as Transaction)
+    );
+
+    console.log("Found transactions:", transactions);
+    return transactions;
 }
 
 export async function updateTransaction(id: string, data: Partial<Transaction>): Promise<void> {
