@@ -18,11 +18,7 @@ export const metadata: Metadata = {
     description: "A privacy-focused, self-hostable expense tracking desktop application built with Tauri, NextJS, TypeScript, and Firebase.",
 };
 
-export default function RootLayout({
-    children,
-}: Readonly<{
-    children: React.ReactNode;
-}>) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
     return (
         <html lang="en" suppressHydrationWarning>
             <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
