@@ -16,30 +16,35 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+function LoadingScreen() {
+    return (
+        <div className="flex min-h-screen items-center justify-center bg-background">
+            <div className="space-y-4 text-center">
+                <div className="text-4xl font-bold">Cashflow</div>
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-foreground mx-auto" />
+            </div>
+        </div>
+    );
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
     const [isLoading, setIsLoading] = useState(true);
-    const { firebaseConfig } = useAppConfig();
+    const { firebaseConfig, isLoading: isConfigLoading } = useAppConfig();
 
     useEffect(() => {
-        if (!firebaseConfig) {
-            setIsLoading(false);
+        if (isConfigLoading || !firebaseConfig) {
             return;
         }
 
         const { auth } = initializeFirebase(firebaseConfig);
-        if (!auth) {
-            setIsLoading(false);
-            return;
-        }
-
         const unsubscribe = onAuthStateChanged(auth, (user) => {
             setUser(user);
             setIsLoading(false);
         });
 
         return () => unsubscribe();
-    }, [firebaseConfig]);
+    }, [firebaseConfig, isConfigLoading]);
 
     const signIn = async (email: string, password: string) => {
         const { auth } = getFirebase();
@@ -55,6 +60,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const { auth } = getFirebase();
         await firebaseSignOut(auth);
     };
+
+    // Show loading screen while initializing auth
+    if (isLoading || isConfigLoading) {
+        return <LoadingScreen />;
+    }
 
     return (
         <AuthContext.Provider

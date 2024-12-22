@@ -5,7 +5,7 @@ import { useAppConfig } from "@/context/app-config";
 import { useAuth } from "@/context/auth";
 import { useSpace } from "@/context/space";
 import { SetupWizard } from "@/components/setup/setup-wizard";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 const PUBLIC_PATHS = ["/login", "/signup"];
 
@@ -26,36 +26,43 @@ export function InitializationWrapper({ children }: { children: React.ReactNode 
     const { isInitialized, isLoading: isConfigLoading } = useAppConfig();
     const { user, isLoading: isAuthLoading } = useAuth();
     const { loading: isSpaceLoading } = useSpace();
+    const [isRouteReady, setIsRouteReady] = useState(false);
 
     const isPublicPath = PUBLIC_PATHS.includes(pathname);
-    const isLoading = isConfigLoading || isAuthLoading || isSpaceLoading;
+    const isLoading = isConfigLoading || isAuthLoading || isSpaceLoading || !isRouteReady;
 
     useEffect(() => {
-        if (isLoading) return;
-
-        if (!isInitialized) return;
-
-        if (!user && !isPublicPath) {
-            router.push("/login");
+        if (isConfigLoading || isAuthLoading || isSpaceLoading || !isInitialized) {
+            setIsRouteReady(false);
             return;
         }
 
-        if (user && isPublicPath) {
-            router.push("/");
-            return;
+        const shouldRedirect =
+            (!user && !isPublicPath) || // Not logged in and trying to access private page
+            (user && isPublicPath); // Logged in and trying to access public page
+
+        if (shouldRedirect) {
+            const redirectPath = user ? "/" : "/login";
+            if (pathname !== redirectPath) {
+                router.replace(redirectPath);
+                return;
+            }
         }
 
-        // If user is logged in and has no spaces, they should stay on the current page
-        // to see the space creation dialog
-    }, [isLoading, isInitialized, user, isPublicPath, router]);
+        // Only mark route as ready when we're sure we're on the correct page
+        setIsRouteReady(true);
+    }, [isConfigLoading, isAuthLoading, isSpaceLoading, isInitialized, user, isPublicPath, pathname, router]);
 
+    // Show loading screen until everything is ready
     if (isLoading) {
         return <LoadingScreen />;
     }
 
+    // Show setup wizard if not initialized
     if (!isInitialized) {
         return <SetupWizard />;
     }
 
+    // Only render children when we're sure we're on the right page
     return <>{children}</>;
 }
