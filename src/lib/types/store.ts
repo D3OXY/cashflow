@@ -15,9 +15,14 @@ export interface AppConfig {
     currency?: "INR" | "USD" | "EUR";
 }
 
-export type StoreKeys = "app-config" | "user-preferences";
+export interface SpaceState {
+    lastSpaceId?: string;
+}
+
+export type StoreKeys = "app-config" | "user-preferences" | "space-state";
 
 export interface Store {
     "app-config": AppConfig;
     "user-preferences": Record<string, unknown>;
+    "space-state": SpaceState;
 }
