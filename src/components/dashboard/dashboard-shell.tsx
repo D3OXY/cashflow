@@ -10,9 +10,11 @@ import { SpaceSwitcher } from "@/components/space/space-switcher";
 import { toast } from "sonner";
 import Link from "next/link";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { useUser } from "@/context/user";
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {
-    const { user, signOut } = useAuth();
+    const { signOut } = useAuth();
+    const { userData } = useUser();
     const { currentSpace } = useSpace();
 
     const handleSignOut = async () => {
@@ -25,7 +27,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         }
     };
 
-    const userInitials = user?.email?.slice(0, 2).toUpperCase() || "??";
+    const userInitials = userData?.email?.slice(0, 2).toUpperCase() || "??";
 
     return (
         <SidebarProvider defaultOpen>
@@ -76,11 +78,12 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                                 <Button variant="ghost" className="w-full justify-between h-auto py-3 px-4 hover:bg-sidebar-accent text-sidebar-foreground">
                                     <div className="flex items-center gap-3">
                                         <Avatar className="h-8 w-8 border border-sidebar-border/20">
-                                            <AvatarImage src={user?.photoURL || undefined} />
+                                            <AvatarImage src={userData?.photoURL || undefined} />
                                             <AvatarFallback className="bg-sidebar-accent text-sm">{userInitials}</AvatarFallback>
                                         </Avatar>
                                         <div className="flex flex-col items-start">
-                                            <span className="text-sm font-medium truncate max-w-[120px]">{user?.displayName || user?.email}</span>
+                                            <span className="text-sm font-medium truncate max-w-[120px]">{userData?.displayName}</span>
+                                            <span className="text-[10px] text-muted-foreground truncate max-w-[120px]">{userData?.email}</span>
                                         </div>
                                     </div>
                                     <ChevronsUpDown className="h-4 w-4 text-sidebar-foreground/50" />
