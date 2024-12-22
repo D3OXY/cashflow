@@ -4,16 +4,26 @@ import { useTransaction } from "@/context/transaction";
 import { useSpace } from "@/context/space";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { format } from "date-fns";
+import { format, startOfMonth, endOfMonth, isWithinInterval } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { DatePickerWithRange } from "./date-range-picker";
+import { useState } from "react";
+import type { DateRange } from "react-day-picker";
 
 export default function TransactionList() {
     const { transactions, isLoading, error, deleteTransaction } = useTransaction();
     const { currentSpace } = useSpace();
+    const [date, setDate] = useState<DateRange | undefined>(() => {
+        const today = new Date();
+        return {
+            from: startOfMonth(today),
+            to: endOfMonth(today),
+        };
+    });
 
     const handleDelete = async (id: string) => {
         try {
@@ -25,6 +35,15 @@ export default function TransactionList() {
             });
         }
     };
+
+    const filteredTransactions = transactions?.filter((transaction) => {
+        if (!date?.from) return true;
+        const transactionDate = new Date(transaction.date);
+        if (date.to) {
+            return isWithinInterval(transactionDate, { start: date.from, end: date.to });
+        }
+        return format(transactionDate, "yyyy-MM-dd") === format(date.from, "yyyy-MM-dd");
+    });
 
     if (isLoading) {
         return (
@@ -53,8 +72,13 @@ export default function TransactionList() {
     return (
         <Card>
             <CardHeader>
-                <CardTitle>Transactions</CardTitle>
-                <CardDescription>Your recent transactions</CardDescription>
+                <div className="flex items-center justify-between">
+                    <div>
+                        <CardTitle>Transactions</CardTitle>
+                        <CardDescription>Your recent transactions</CardDescription>
+                    </div>
+                    <DatePickerWithRange date={date} onDateChange={setDate} />
+                </div>
             </CardHeader>
             <CardContent>
                 <Table>
@@ -70,7 +94,7 @@ export default function TransactionList() {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {transactions.map((transaction) => {
+                        {filteredTransactions.map((transaction) => {
                             const category = currentSpace?.categories.find((c) => c.id === transaction.category);
                             return (
                                 <TableRow key={transaction.id}>
@@ -81,9 +105,7 @@ export default function TransactionList() {
                                     <TableCell>
                                         {category && (
                                             <div className="flex items-center gap-2">
-                                                <div className="flex h-4 w-4 items-center justify-center rounded-full" style={{ backgroundColor: category.color }}>
-                                                    <span className="text-[10px]">{category.icon}</span>
-                                                </div>
+                                                <span className="text-xl">{category.icon}</span>
                                                 <span>{category.name}</span>
                                             </div>
                                         )}
