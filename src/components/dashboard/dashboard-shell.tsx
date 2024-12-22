@@ -1,148 +1,157 @@
 "use client";
 
-import { useEffect } from "react";
-import { SidebarProvider, Sidebar, SidebarContent, SidebarHeader, SidebarTrigger, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from "@/components/ui/sidebar";
-import { useAuth } from "@/context/auth";
-import { useSpace } from "@/context/space";
-import { Home, PieChart, Settings, LogOut, Menu, ChevronsUpDown } from "lucide-react";
+import * as React from "react";
+import { usePathname } from "next/navigation";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { SpaceSwitcher } from "@/components/space/space-switcher";
-import { toast } from "sonner";
+import { Separator } from "@/components/ui/separator";
+import { Menu, Settings, LayoutDashboard } from "lucide-react";
+import { useAuth } from "@/context/auth";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import Link from "next/link";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { useUser } from "@/context/user";
-import { useRouter } from "next/navigation";
-import { SpaceOnboarding } from "@/components/space/space-onboarding";
+import { appStore } from "@/lib/tauri-store";
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {
-    const router = useRouter();
-    const { signOut } = useAuth();
-    const { userData } = useUser();
-    const { spaces, currentSpace, showCreateSpace } = useSpace();
+    const pathname = usePathname();
+    const { user, signOut } = useAuth();
+    const [open, setOpen] = React.useState(false);
+    const [sidebarOpen, setSidebarOpen] = React.useState(false);
 
-    useEffect(() => {
-        // If there are spaces but no current space selected, redirect to the first space
-        if (spaces && spaces.length > 0 && !currentSpace) {
-            router.push(`/dashboard?spaceId=${spaces[0].id}`);
-            return;
-        }
-    }, [spaces, currentSpace, router]);
+    // Load initial sidebar state
+    React.useEffect(() => {
+        const loadSidebarState = async () => {
+            const uiState = await appStore.get("ui-state");
+            if (uiState) {
+                setSidebarOpen(uiState.sidebarOpen);
+            }
+        };
+        loadSidebarState();
+    }, []);
 
-    // Show nothing while redirecting
-    if (!spaces) {
-        return null;
-    }
-
-    // Show space creation dialog if no spaces exist
-    if (showCreateSpace) {
-        return <SpaceOnboarding />;
-    }
-
-    const handleSignOut = async () => {
-        try {
-            await signOut();
-            toast.success("Successfully logged out");
-        } catch (error) {
-            console.error("Failed to sign out:", error);
-            toast.error("Failed to sign out");
-        }
+    // Save sidebar state when it changes
+    const toggleSidebar = async () => {
+        const newState = !sidebarOpen;
+        setSidebarOpen(newState);
+        await appStore.set("ui-state", { sidebarOpen: newState });
     };
 
-    const userInitials = userData?.email?.slice(0, 2).toUpperCase() || "??";
-
     return (
-        <SidebarProvider defaultOpen>
-            <div className="flex min-h-screen w-full">
-                <Sidebar className="border-r border-sidebar-border shrink-0 flex flex-col w-64 bg-sidebar-background text-sidebar-foreground">
-                    <SidebarHeader className="border-b border-sidebar-border h-14">
-                        <SpaceSwitcher />
-                    </SidebarHeader>
-
-                    <div className="flex-1">
-                        <div className="py-6">
-                            <SidebarContent>
-                                <SidebarMenu>
-                                    <SidebarMenuItem>
-                                        <Link href="/dashboard" passHref legacyBehavior>
-                                            <SidebarMenuButton className="w-full flex items-center px-4 py-2 hover:bg-sidebar-accent text-sidebar-foreground">
-                                                <Home className="mr-3 h-4 w-4" />
-                                                Dashboard
-                                            </SidebarMenuButton>
-                                        </Link>
-                                    </SidebarMenuItem>
-
-                                    <SidebarMenuItem>
-                                        <Link href="/dashboard/analytics" passHref legacyBehavior>
-                                            <SidebarMenuButton className="w-full flex items-center px-4 py-2 hover:bg-sidebar-accent text-sidebar-foreground">
-                                                <PieChart className="mr-3 h-4 w-4" />
-                                                Analytics
-                                            </SidebarMenuButton>
-                                        </Link>
-                                    </SidebarMenuItem>
-
-                                    <SidebarMenuItem>
-                                        <Link href="/dashboard/settings" passHref legacyBehavior>
-                                            <SidebarMenuButton className="w-full flex items-center px-4 py-2 hover:bg-sidebar-accent text-sidebar-foreground">
-                                                <Settings className="mr-3 h-4 w-4" />
-                                                Settings
-                                            </SidebarMenuButton>
-                                        </Link>
-                                    </SidebarMenuItem>
-                                </SidebarMenu>
-                            </SidebarContent>
-                        </div>
-                    </div>
-
-                    <div className="mt-auto border-t border-sidebar-border/10 flex-none">
-                        <Popover>
-                            <PopoverTrigger asChild>
-                                <Button variant="ghost" className="w-full justify-between h-auto py-3 px-4 hover:bg-sidebar-accent text-sidebar-foreground">
-                                    <div className="flex items-center gap-3">
-                                        <Avatar className="h-8 w-8 border border-sidebar-border/20">
-                                            <AvatarImage src={userData?.photoURL || undefined} />
-                                            <AvatarFallback className="bg-sidebar-accent text-sm">{userInitials}</AvatarFallback>
-                                        </Avatar>
-                                        <div className="flex flex-col items-start">
-                                            <span className="text-sm font-medium truncate max-w-[120px]">{userData?.displayName}</span>
-                                            <span className="text-[10px] text-muted-foreground truncate max-w-[120px]">{userData?.email}</span>
-                                        </div>
-                                    </div>
-                                    <ChevronsUpDown className="h-4 w-4 text-sidebar-foreground/50" />
-                                </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-[200px] p-2" align="end" side="right" sideOffset={8}>
-                                <Button variant="ghost" className="w-full justify-start" onClick={handleSignOut}>
-                                    <LogOut className="mr-2 h-4 w-4" />
-                                    Sign out
-                                </Button>
-                            </PopoverContent>
-                        </Popover>
-                    </div>
-                </Sidebar>
-
-                <div className="flex-1 w-0 min-w-0">
-                    <header className="sticky top-0 z-10 bg-background border-b border-border h-14">
-                        <div className="flex h-full items-center gap-4 px-6">
-                            <SidebarTrigger>
-                                <Button variant="ghost" size="icon">
-                                    <Menu className="h-5 w-5" />
-                                </Button>
-                            </SidebarTrigger>
-                            <div className="flex items-center gap-2">
-                                <h1 className="text-xl font-semibold">Cashflow</h1>
-                                {currentSpace && (
-                                    <>
-                                        <span className="text-muted-foreground">/</span>
-                                        <span className="text-muted-foreground">{currentSpace.name}</span>
-                                    </>
-                                )}
+        <div className="h-screen w-full flex">
+            <aside className={cn("relative h-screen border-r bg-sidebar-background transition-all duration-300 ease-in-out", sidebarOpen ? "w-64" : "w-14")}>
+                <div className="h-14 border-b flex items-center px-4">
+                    <Button variant="ghost" size="icon" onClick={toggleSidebar} className="text-sidebar-foreground">
+                        <Menu className="h-5 w-5" />
+                    </Button>
+                </div>
+                <div className={cn("h-14 border-b transition-all", !sidebarOpen && "hidden")}>
+                    <SpaceSwitcher />
+                </div>
+                <ScrollArea className="h-[calc(100vh-8rem)]">
+                    <div className="space-y-4 py-4">
+                        <div className="px-3 py-2">
+                            <div className="space-y-1">
+                                <Link href="/dashboard" className="block">
+                                    <Button
+                                        variant="ghost"
+                                        className={cn("w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground", {
+                                            "bg-sidebar-accent": pathname === "/dashboard",
+                                        })}
+                                    >
+                                        <LayoutDashboard className="mr-2 h-4 w-4" />
+                                        {sidebarOpen && <span>Overview</span>}
+                                    </Button>
+                                </Link>
+                                <Link href="/dashboard/settings" className="block">
+                                    <Button
+                                        variant="ghost"
+                                        className={cn("w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground", {
+                                            "bg-sidebar-accent": pathname === "/dashboard/settings",
+                                        })}
+                                    >
+                                        <Settings className="mr-2 h-4 w-4" />
+                                        {sidebarOpen && <span>Settings</span>}
+                                    </Button>
+                                </Link>
                             </div>
                         </div>
-                    </header>
-                    <main className="container mx-auto p-6">{children}</main>
+                    </div>
+                </ScrollArea>
+                <div className="h-14 border-t flex items-center px-3">
+                    <DropdownMenu open={open} onOpenChange={setOpen}>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" className="h-10 w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground">
+                                <Avatar className="h-6 w-6">
+                                    <AvatarImage src={user?.photoURL || undefined} alt={user?.displayName || undefined} />
+                                    <AvatarFallback>{user?.displayName?.[0] || user?.email?.[0]}</AvatarFallback>
+                                </Avatar>
+                                {sidebarOpen && <span className="ml-2 truncate">{user?.displayName || user?.email}</span>}
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={signOut}>Sign out</DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                 </div>
-            </div>
-        </SidebarProvider>
+            </aside>
+            <main className="flex-1 overflow-y-auto">
+                <Sheet>
+                    <SheetTrigger asChild>
+                        <Button variant="ghost" size="icon" className="md:hidden">
+                            <Menu className="h-5 w-5" />
+                        </Button>
+                    </SheetTrigger>
+                    <SheetContent side="left" className="w-64 bg-sidebar-background p-0">
+                        <SpaceSwitcher />
+                        <Separator className="bg-sidebar-border/10" />
+                        <ScrollArea className="h-[calc(100vh-8rem)]">
+                            <div className="space-y-4 py-4">
+                                <div className="px-3 py-2">
+                                    <div className="space-y-1">
+                                        <Link href="/dashboard" className="block">
+                                            <Button
+                                                variant="ghost"
+                                                className={cn("w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground", {
+                                                    "bg-sidebar-accent": pathname === "/dashboard",
+                                                })}
+                                            >
+                                                <LayoutDashboard className="mr-2 h-4 w-4" />
+                                                Overview
+                                            </Button>
+                                        </Link>
+                                        <Link href="/dashboard/settings" className="block">
+                                            <Button
+                                                variant="ghost"
+                                                className={cn("w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground", {
+                                                    "bg-sidebar-accent": pathname === "/dashboard/settings",
+                                                })}
+                                            >
+                                                <Settings className="mr-2 h-4 w-4" />
+                                                Settings
+                                            </Button>
+                                        </Link>
+                                    </div>
+                                </div>
+                            </div>
+                        </ScrollArea>
+                        <div className="h-14 border-t flex items-center px-3">
+                            <Button variant="ghost" className="h-10 w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground">
+                                <Avatar className="h-6 w-6">
+                                    <AvatarImage src={user?.photoURL || undefined} alt={user?.displayName || undefined} />
+                                    <AvatarFallback>{user?.displayName?.[0] || user?.email?.[0]}</AvatarFallback>
+                                </Avatar>
+                                <span className="ml-2 truncate">{user?.displayName || user?.email}</span>
+                            </Button>
+                        </div>
+                    </SheetContent>
+                </Sheet>
+                <div className="p-8">{children}</div>
+            </main>
+        </div>
     );
 }
