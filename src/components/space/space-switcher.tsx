@@ -36,33 +36,38 @@ export function SpaceSwitcher() {
         <Dialog open={showNewSpaceDialog} onOpenChange={setShowNewSpaceDialog}>
             <Popover open={open} onOpenChange={setOpen}>
                 <PopoverTrigger asChild>
-                    <Button variant="outline" role="combobox" aria-expanded={open} aria-label="Select a space" className="w-[200px] justify-between">
-                        {currentSpace?.name || "Select a space"}
-                        <ChevronsUpDown className="ml-auto h-4 w-4 shrink-0 opacity-50" />
+                    <Button variant="ghost" role="combobox" aria-expanded={open} aria-label="Select a space" className="w-full h-16 justify-between px-4 hover:bg-white/5">
+                        <div className="flex flex-col items-start gap-1">
+                            <span className="text-xs text-muted-foreground font-medium tracking-wider">SPACE</span>
+                            <span className="font-medium truncate">{currentSpace?.name || "Select a space"}</span>
+                        </div>
+                        <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
                     </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-[200px] p-0">
-                    <Command>
+                <PopoverContent className="w-[200px] p-0" align="end" side="right" sideOffset={8}>
+                    <Command className="border border-border/10">
                         <CommandList>
-                            <CommandInput placeholder="Search space..." />
+                            <CommandInput placeholder="Search spaces..." className="h-9" />
                             <CommandEmpty>No space found.</CommandEmpty>
-                            <CommandGroup heading="Spaces">
-                                {spaces.map((space) => (
-                                    <CommandItem
-                                        key={space.id}
-                                        onSelect={() => {
-                                            switchSpace(space.id);
-                                            setOpen(false);
-                                        }}
-                                        className="text-sm"
-                                    >
-                                        {space.name}
-                                        <Check className={cn("ml-auto h-4 w-4", currentSpace?.id === space.id ? "opacity-100" : "opacity-0")} />
-                                    </CommandItem>
-                                ))}
-                            </CommandGroup>
+                            {spaces.length > 0 && (
+                                <CommandGroup>
+                                    {spaces.map((space) => (
+                                        <CommandItem
+                                            key={space.id}
+                                            onSelect={() => {
+                                                switchSpace(space.id);
+                                                setOpen(false);
+                                            }}
+                                            className="text-sm"
+                                        >
+                                            {space.name}
+                                            <Check className={cn("ml-auto h-4 w-4", currentSpace?.id === space.id ? "opacity-100" : "opacity-0")} />
+                                        </CommandItem>
+                                    ))}
+                                </CommandGroup>
+                            )}
                         </CommandList>
-                        <CommandSeparator />
+                        <CommandSeparator className="bg-border/10" />
                         <CommandList>
                             <CommandGroup>
                                 <CommandItem
@@ -87,7 +92,7 @@ export function SpaceSwitcher() {
                 <div className="space-y-4 py-4">
                     <div className="space-y-2">
                         <Label htmlFor="name">Space Name</Label>
-                        <Input id="name" placeholder="Enter space name" value={newSpaceName} onChange={(e) => setNewSpaceName(e.target.value)} />
+                        <Input id="name" placeholder="e.g., Personal Finance" value={newSpaceName} onChange={(e) => setNewSpaceName(e.target.value)} />
                     </div>
                 </div>
                 <DialogFooter>

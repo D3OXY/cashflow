@@ -1,14 +1,15 @@
 "use client";
 
-import { SidebarProvider, Sidebar, SidebarContent, SidebarHeader, SidebarTrigger, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter } from "@/components/ui/sidebar";
+import { SidebarProvider, Sidebar, SidebarContent, SidebarHeader, SidebarTrigger, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from "@/components/ui/sidebar";
 import { useAuth } from "@/context/auth";
 import { useSpace } from "@/context/space";
-import { Home, PieChart, Settings, LogOut, Menu } from "lucide-react";
+import { Home, PieChart, Settings, LogOut, Menu, ChevronsUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { SpaceSwitcher } from "@/components/space/space-switcher";
 import { toast } from "sonner";
 import Link from "next/link";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {
     const { user, signOut } = useAuth();
@@ -29,56 +30,69 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
     return (
         <SidebarProvider defaultOpen>
             <div className="flex min-h-screen w-full">
-                <Sidebar className="border-r shrink-0">
-                    <SidebarHeader className="border-b border-border px-4 py-2">
-                        <div className="flex items-center gap-2">
-                            <Avatar>
-                                <AvatarFallback>{userInitials}</AvatarFallback>
-                            </Avatar>
-                            <div className="flex flex-col">
-                                <span className="text-sm font-medium">{user?.email}</span>
-                                <span className="text-xs text-muted-foreground">{currentSpace?.name || "No Space Selected"}</span>
-                            </div>
-                        </div>
+                <Sidebar className="border-r shrink-0 flex flex-col w-64 bg-zinc-900">
+                    <SidebarHeader className="border-b border-border/10 flex-none">
+                        <SpaceSwitcher />
                     </SidebarHeader>
 
-                    <SidebarContent>
-                        <SidebarMenu>
-                            <SidebarMenuItem>
-                                <Link href="/dashboard" passHref legacyBehavior>
-                                    <SidebarMenuButton className="w-full flex items-center px-4 py-2 hover:bg-accent">
-                                        <Home className="mr-2 h-4 w-4" />
-                                        Dashboard
-                                    </SidebarMenuButton>
-                                </Link>
-                            </SidebarMenuItem>
+                    <div className="flex-1">
+                        <div className="py-6">
+                            <SidebarContent>
+                                <SidebarMenu>
+                                    <SidebarMenuItem>
+                                        <Link href="/dashboard" passHref legacyBehavior>
+                                            <SidebarMenuButton className="w-full flex items-center px-4 py-2 hover:bg-white/5">
+                                                <Home className="mr-3 h-4 w-4" />
+                                                Dashboard
+                                            </SidebarMenuButton>
+                                        </Link>
+                                    </SidebarMenuItem>
 
-                            <SidebarMenuItem>
-                                <Link href="/dashboard/analytics" passHref legacyBehavior>
-                                    <SidebarMenuButton className="w-full flex items-center px-4 py-2 hover:bg-accent">
-                                        <PieChart className="mr-2 h-4 w-4" />
-                                        Analytics
-                                    </SidebarMenuButton>
-                                </Link>
-                            </SidebarMenuItem>
+                                    <SidebarMenuItem>
+                                        <Link href="/dashboard/analytics" passHref legacyBehavior>
+                                            <SidebarMenuButton className="w-full flex items-center px-4 py-2 hover:bg-white/5">
+                                                <PieChart className="mr-3 h-4 w-4" />
+                                                Analytics
+                                            </SidebarMenuButton>
+                                        </Link>
+                                    </SidebarMenuItem>
 
-                            <SidebarMenuItem>
-                                <Link href="/dashboard/settings" passHref legacyBehavior>
-                                    <SidebarMenuButton className="w-full flex items-center px-4 py-2 hover:bg-accent">
-                                        <Settings className="mr-2 h-4 w-4" />
-                                        Settings
-                                    </SidebarMenuButton>
-                                </Link>
-                            </SidebarMenuItem>
-                        </SidebarMenu>
-                    </SidebarContent>
+                                    <SidebarMenuItem>
+                                        <Link href="/dashboard/settings" passHref legacyBehavior>
+                                            <SidebarMenuButton className="w-full flex items-center px-4 py-2 hover:bg-white/5">
+                                                <Settings className="mr-3 h-4 w-4" />
+                                                Settings
+                                            </SidebarMenuButton>
+                                        </Link>
+                                    </SidebarMenuItem>
+                                </SidebarMenu>
+                            </SidebarContent>
+                        </div>
+                    </div>
 
-                    <SidebarFooter className="border-t p-4">
-                        <Button variant="ghost" className="w-full justify-start" onClick={handleSignOut}>
-                            <LogOut className="mr-2 h-4 w-4" />
-                            Sign Out
-                        </Button>
-                    </SidebarFooter>
+                    <div className="mt-auto border-t border-border/10 flex-none">
+                        <Popover>
+                            <PopoverTrigger asChild>
+                                <Button variant="ghost" className="w-full justify-between h-auto py-3 px-4 hover:bg-white/5">
+                                    <div className="flex items-center gap-3">
+                                        <Avatar className="h-8 w-8 border border-border/20">
+                                            <AvatarFallback className="bg-white/10 text-sm">{userInitials}</AvatarFallback>
+                                        </Avatar>
+                                        <div className="flex flex-col items-start">
+                                            <span className="text-sm font-medium truncate max-w-[120px]">{user?.email}</span>
+                                        </div>
+                                    </div>
+                                    <ChevronsUpDown className="h-4 w-4 text-muted-foreground" />
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-[200px] p-2" align="end" side="right" sideOffset={8}>
+                                <Button variant="ghost" className="w-full justify-start" onClick={handleSignOut}>
+                                    <LogOut className="mr-2 h-4 w-4" />
+                                    Sign out
+                                </Button>
+                            </PopoverContent>
+                        </Popover>
+                    </div>
                 </Sidebar>
 
                 <div className="flex-1 w-0 min-w-0">
@@ -89,9 +103,14 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                                     <Menu className="h-5 w-5" />
                                 </Button>
                             </SidebarTrigger>
-                            <h1 className="text-xl font-semibold">Cashflow</h1>
-                            <div className="ml-auto">
-                                <SpaceSwitcher />
+                            <div className="flex items-center gap-2">
+                                <h1 className="text-xl font-semibold">Cashflow</h1>
+                                {currentSpace && (
+                                    <>
+                                        <span className="text-muted-foreground">/</span>
+                                        <span className="text-muted-foreground">{currentSpace.name}</span>
+                                    </>
+                                )}
                             </div>
                         </div>
                     </header>
