@@ -36,16 +36,22 @@ export function SpaceSwitcher() {
         <Dialog open={showNewSpaceDialog} onOpenChange={setShowNewSpaceDialog}>
             <Popover open={open} onOpenChange={setOpen}>
                 <PopoverTrigger asChild>
-                    <Button variant="ghost" role="combobox" aria-expanded={open} aria-label="Select a space" className="w-full h-16 justify-between px-4 hover:bg-white/5">
+                    <Button
+                        variant="ghost"
+                        role="combobox"
+                        aria-expanded={open}
+                        aria-label="Select a space"
+                        className="w-full h-16 justify-between px-4 hover:bg-sidebar-accent text-sidebar-foreground"
+                    >
                         <div className="flex flex-col items-start gap-1">
-                            <span className="text-xs text-muted-foreground font-medium tracking-wider">SPACE</span>
+                            <span className="text-xs text-sidebar-foreground/60 font-medium tracking-wider">SPACE</span>
                             <span className="font-medium truncate">{currentSpace?.name || "Select a space"}</span>
                         </div>
-                        <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
+                        <ChevronsUpDown className="h-4 w-4 shrink-0 text-sidebar-foreground/50" />
                     </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-[200px] p-0" align="end" side="right" sideOffset={8}>
-                    <Command className="border border-border/10">
+                    <Command className="border border-sidebar-border/10">
                         <CommandList>
                             <CommandInput placeholder="Search spaces..." className="h-9" />
                             <CommandEmpty>No space found.</CommandEmpty>
@@ -67,7 +73,7 @@ export function SpaceSwitcher() {
                                 </CommandGroup>
                             )}
                         </CommandList>
-                        <CommandSeparator className="bg-border/10" />
+                        <CommandSeparator className="bg-sidebar-border/10" />
                         <CommandList>
                             <CommandGroup>
                                 <CommandItem

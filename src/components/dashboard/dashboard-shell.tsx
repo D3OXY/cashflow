@@ -30,8 +30,8 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
     return (
         <SidebarProvider defaultOpen>
             <div className="flex min-h-screen w-full">
-                <Sidebar className="border-r shrink-0 flex flex-col w-64 bg-zinc-900">
-                    <SidebarHeader className="border-b border-border/10 flex-none">
+                <Sidebar className="border-r border-sidebar-border shrink-0 flex flex-col w-64 bg-sidebar-background text-sidebar-foreground">
+                    <SidebarHeader className="border-b border-sidebar-border/10 flex-none">
                         <SpaceSwitcher />
                     </SidebarHeader>
 
@@ -41,7 +41,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                                 <SidebarMenu>
                                     <SidebarMenuItem>
                                         <Link href="/dashboard" passHref legacyBehavior>
-                                            <SidebarMenuButton className="w-full flex items-center px-4 py-2 hover:bg-white/5">
+                                            <SidebarMenuButton className="w-full flex items-center px-4 py-2 hover:bg-sidebar-accent text-sidebar-foreground">
                                                 <Home className="mr-3 h-4 w-4" />
                                                 Dashboard
                                             </SidebarMenuButton>
@@ -50,7 +50,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
                                     <SidebarMenuItem>
                                         <Link href="/dashboard/analytics" passHref legacyBehavior>
-                                            <SidebarMenuButton className="w-full flex items-center px-4 py-2 hover:bg-white/5">
+                                            <SidebarMenuButton className="w-full flex items-center px-4 py-2 hover:bg-sidebar-accent text-sidebar-foreground">
                                                 <PieChart className="mr-3 h-4 w-4" />
                                                 Analytics
                                             </SidebarMenuButton>
@@ -59,7 +59,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
                                     <SidebarMenuItem>
                                         <Link href="/dashboard/settings" passHref legacyBehavior>
-                                            <SidebarMenuButton className="w-full flex items-center px-4 py-2 hover:bg-white/5">
+                                            <SidebarMenuButton className="w-full flex items-center px-4 py-2 hover:bg-sidebar-accent text-sidebar-foreground">
                                                 <Settings className="mr-3 h-4 w-4" />
                                                 Settings
                                             </SidebarMenuButton>
@@ -70,19 +70,19 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                         </div>
                     </div>
 
-                    <div className="mt-auto border-t border-border/10 flex-none">
+                    <div className="mt-auto border-t border-sidebar-border/10 flex-none">
                         <Popover>
                             <PopoverTrigger asChild>
-                                <Button variant="ghost" className="w-full justify-between h-auto py-3 px-4 hover:bg-white/5">
+                                <Button variant="ghost" className="w-full justify-between h-auto py-3 px-4 hover:bg-sidebar-accent text-sidebar-foreground">
                                     <div className="flex items-center gap-3">
-                                        <Avatar className="h-8 w-8 border border-border/20">
-                                            <AvatarFallback className="bg-white/10 text-sm">{userInitials}</AvatarFallback>
+                                        <Avatar className="h-8 w-8 border border-sidebar-border/20">
+                                            <AvatarFallback className="bg-sidebar-accent text-sm">{userInitials}</AvatarFallback>
                                         </Avatar>
                                         <div className="flex flex-col items-start">
                                             <span className="text-sm font-medium truncate max-w-[120px]">{user?.email}</span>
                                         </div>
                                     </div>
-                                    <ChevronsUpDown className="h-4 w-4 text-muted-foreground" />
+                                    <ChevronsUpDown className="h-4 w-4 text-sidebar-foreground/50" />
                                 </Button>
                             </PopoverTrigger>
                             <PopoverContent className="w-[200px] p-2" align="end" side="right" sideOffset={8}>
