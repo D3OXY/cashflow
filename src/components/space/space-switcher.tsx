@@ -12,21 +12,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { useSpace } from "@/context/space";
 import { toast } from "sonner";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-
-const SPACE_ICONS = [
-    { value: "💰", label: "Money" },
-    { value: "🏠", label: "Home" },
-    { value: "💼", label: "Work" },
-    { value: "🚗", label: "Car" },
-    { value: "✈️", label: "Travel" },
-    { value: "🎓", label: "Study" },
-    { value: "🏦", label: "Bank" },
-    { value: "💳", label: "Card" },
-    { value: "🎯", label: "Goals" },
-    { value: "📊", label: "Stats" },
-    { value: "🛒", label: "Shop" },
-    { value: "🏪", label: "Store" },
-] as const;
+import { SPACE_ICONS } from "@/lib/constants";
 
 export function SpaceSwitcher() {
     const { spaces, currentSpace, switchSpace, createNewSpace } = useSpace();

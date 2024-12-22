@@ -14,6 +14,7 @@ import { doc, updateDoc } from "firebase/firestore";
 import { getDb } from "@/lib/firebase/config";
 import { Loader2 } from "lucide-react";
 import { useSpace } from "@/context/space";
+import { SPACE_ICONS } from "@/lib/constants";
 
 interface SpaceSettingsProps {
     space: Space;
@@ -147,10 +148,30 @@ export function SpaceSettings({ space }: SpaceSettingsProps) {
                     <div className="space-y-2">
                         <Label htmlFor="icon">Space Icon</Label>
                         <div className="flex gap-2">
-                            <Input id="icon" value={spaceIcon} onChange={(e) => setSpaceIcon(e.target.value)} placeholder="Enter space icon" />
-                            <Button onClick={() => updateSpace("icon", spaceIcon, "details")} disabled={isUpdating.details || spaceIcon === space.icon}>
-                                {isUpdating.details ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save"}
-                            </Button>
+                            <Select
+                                value={spaceIcon}
+                                onValueChange={(value) => {
+                                    setSpaceIcon(value);
+                                    updateSpace("icon", value, "details");
+                                }}
+                            >
+                                <SelectTrigger id="icon" className="w-full">
+                                    <SelectValue>
+                                        <span className="text-xl">{spaceIcon}</span>
+                                    </SelectValue>
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {SPACE_ICONS.map((icon) => (
+                                        <SelectItem key={icon.value} value={icon.value}>
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-xl">{icon.value}</span>
+                                                <span className="text-muted-foreground">{icon.label}</span>
+                                            </div>
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            {isUpdating.details && <Loader2 className="h-4 w-4 animate-spin" />}
                         </div>
                     </div>
 
