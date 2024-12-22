@@ -5,7 +5,7 @@ import { useAuth } from "@/context/auth";
 import { useSpace } from "@/context/space";
 import { Home, PieChart, Settings, LogOut, Menu, ChevronsUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { SpaceSwitcher } from "@/components/space/space-switcher";
 import { toast } from "sonner";
 import Link from "next/link";
@@ -76,10 +76,11 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                                 <Button variant="ghost" className="w-full justify-between h-auto py-3 px-4 hover:bg-sidebar-accent text-sidebar-foreground">
                                     <div className="flex items-center gap-3">
                                         <Avatar className="h-8 w-8 border border-sidebar-border/20">
+                                            <AvatarImage src={user?.photoURL || undefined} />
                                             <AvatarFallback className="bg-sidebar-accent text-sm">{userInitials}</AvatarFallback>
                                         </Avatar>
                                         <div className="flex flex-col items-start">
-                                            <span className="text-sm font-medium truncate max-w-[120px]">{user?.email}</span>
+                                            <span className="text-sm font-medium truncate max-w-[120px]">{user?.displayName || user?.email}</span>
                                         </div>
                                     </div>
                                     <ChevronsUpDown className="h-4 w-4 text-sidebar-foreground/50" />
