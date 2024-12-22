@@ -4,7 +4,6 @@ import { useTheme } from "next-themes";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { useAuth } from "@/context/auth";
 import { Button } from "@/components/ui/button";
@@ -172,33 +171,6 @@ export function UserSettings() {
                                 ))}
                             </SelectContent>
                         </Select>
-                    </div>
-                </CardContent>
-            </Card>
-
-            <Card>
-                <CardHeader>
-                    <CardTitle>Notifications</CardTitle>
-                    <CardDescription>Configure your notification preferences.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    <div className="flex items-center justify-between space-x-2">
-                        <Label htmlFor="recurring-transactions">Recurring Transactions</Label>
-                        <Switch
-                            id="recurring-transactions"
-                            onCheckedChange={(checked) => {
-                                toast.success(`Recurring transactions notifications ${checked ? "enabled" : "disabled"}`);
-                            }}
-                        />
-                    </div>
-                    <div className="flex items-center justify-between space-x-2">
-                        <Label htmlFor="budget-alerts">Budget Alerts</Label>
-                        <Switch
-                            id="budget-alerts"
-                            onCheckedChange={(checked) => {
-                                toast.success(`Budget alerts ${checked ? "enabled" : "disabled"}`);
-                            }}
-                        />
                     </div>
                 </CardContent>
             </Card>
