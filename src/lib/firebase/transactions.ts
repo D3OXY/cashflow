@@ -1,4 +1,4 @@
-import { collection, doc, getDoc, getDocs, query, setDoc, where, orderBy, deleteDoc, updateDoc } from "firebase/firestore";
+import { collection, doc, getDoc, getDocs, query, setDoc, where, orderBy, deleteDoc, updateDoc, limit } from "firebase/firestore";
 import { getDb } from "./config";
 import { getAuth } from "firebase/auth";
 import type { Transaction, CreateTransactionData } from "../types/transaction";
@@ -118,4 +118,24 @@ export async function deleteTransaction(id: string): Promise<void> {
     }
 
     await deleteDoc(transactionRef);
+}
+
+export async function isCategoryInUse(spaceId: string, categoryId: string): Promise<boolean> {
+    const auth = getAuth();
+    const user = auth.currentUser;
+    if (!user) {
+        throw new Error("User not authenticated");
+    }
+
+    const db = getDb();
+    const transactionsQuery = query(
+        collection(db, TRANSACTIONS_COLLECTION),
+        where("spaceId", "==", spaceId),
+        where("category", "==", categoryId),
+        // Limit to 1 since we only need to know if any exist
+        limit(1)
+    );
+
+    const snapshot = await getDocs(transactionsQuery);
+    return !snapshot.empty;
 }

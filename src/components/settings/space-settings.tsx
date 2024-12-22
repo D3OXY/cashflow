@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "sonner";
-import type { Space } from "@/lib/types/space";
+import type { Space, Category } from "@/lib/types/space";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { doc, updateDoc } from "firebase/firestore";
@@ -16,14 +16,14 @@ import { Loader2, Trash2 } from "lucide-react";
 import { useSpace } from "@/context/space";
 import { SPACE_ICONS } from "@/lib/constants";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { deleteSpace } from "@/lib/firebase/spaces";
+import { deleteSpace, deleteCategory } from "@/lib/firebase/spaces";
 import { useRouter } from "next/navigation";
 import { getUserSpaces } from "@/lib/firebase/spaces";
 import { Plus, Pencil, MoreVertical } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { CATEGORY_ICONS } from "@/lib/constants";
-import { addCategory, deleteCategory, updateCategory } from "@/lib/firebase/spaces";
-import type { Category } from "@/lib/types/space";
+import { addCategory, updateCategory } from "@/lib/firebase/spaces";
+import { isCategoryInUse } from "@/lib/firebase/transactions";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -241,16 +241,29 @@ export function SpaceSettings({ space }: SpaceSettingsProps) {
     };
 
     const handleDeleteCategory = async () => {
-        if (!selectedCategory) return;
+        if (!selectedCategory || !space) return;
+
         try {
             setIsUpdating((prev) => ({ ...prev, deleteCategory: true }));
+
+            // Check if category is in use
+            const inUse = await isCategoryInUse(space.id, selectedCategory.id);
+            if (inUse) {
+                toast.error("Cannot delete category", {
+                    description: "This category is being used by one or more transactions. Please update or delete those transactions first.",
+                });
+                return;
+            }
+
             await deleteCategory(space.id, selectedCategory.id);
             await refreshSpaces();
             toast.success("Category deleted successfully");
             setShowDeleteCategoryDialog(false);
         } catch (error) {
             console.error("Failed to delete category:", error);
-            toast.error("Failed to delete category");
+            toast.error("Failed to delete category", {
+                description: error instanceof Error ? error.message : "Please try again later",
+            });
         } finally {
             setIsUpdating((prev) => ({ ...prev, deleteCategory: false }));
         }
