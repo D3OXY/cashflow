@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useState } from "react";
 import { updateProfile } from "firebase/auth";
-import { doc, updateDoc } from "firebase/firestore";
+import { doc, updateDoc, setDoc, getDoc } from "firebase/firestore";
 import { getDb } from "@/lib/firebase/config";
 import { Loader2 } from "lucide-react";
 
@@ -48,7 +48,7 @@ export function UserSettings() {
         try {
             setIsUpdating(true);
 
-            // Update display name
+            // Update display name in Firebase Auth
             if (displayName !== user.displayName) {
                 await updateProfile(user, { displayName });
             }
@@ -60,12 +60,26 @@ export function UserSettings() {
                 // await updateProfile(user, { photoURL: uploadedPhotoUrl });
             }
 
-            // Update user document in Firestore
+            // Check if user document exists
             const userDoc = doc(getDb(), "users", user.uid);
-            await updateDoc(userDoc, {
-                displayName,
-                updatedAt: new Date().toISOString(),
-            });
+            const userSnap = await getDoc(userDoc);
+
+            if (userSnap.exists()) {
+                // Update existing document
+                await updateDoc(userDoc, {
+                    displayName,
+                    email: user.email,
+                    updatedAt: new Date().toISOString(),
+                });
+            } else {
+                // Create new document
+                await setDoc(userDoc, {
+                    displayName,
+                    email: user.email,
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString(),
+                });
+            }
 
             toast.success("Profile updated successfully");
         } catch (error) {

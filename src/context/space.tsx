@@ -1,17 +1,20 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
-import { Space } from "@/lib/types/space";
-import { createSpace, getUserSpaces, CreateSpaceData } from "@/lib/firebase/spaces";
 import { useAuth } from "./auth";
+import { collection, onSnapshot, query, where } from "firebase/firestore";
+import { getDb } from "@/lib/firebase/config";
+import type { Space } from "@/lib/types/space";
+import { createSpace as createSpaceInDb } from "@/lib/firebase/spaces";
+import type { CreateSpaceData } from "@/lib/firebase/spaces";
 
 interface SpaceContextType {
     spaces: Space[];
     currentSpace: Space | null;
-    loading: boolean;
+    isLoading: boolean;
     error: Error | null;
-    createNewSpace: (data: CreateSpaceData) => Promise<Space>;
     switchSpace: (spaceId: string) => void;
+    createNewSpace: (data: CreateSpaceData) => Promise<Space>;
     refreshSpaces: () => Promise<void>;
 }
 
@@ -21,55 +24,63 @@ export function SpaceProvider({ children }: { children: React.ReactNode }) {
     const { user } = useAuth();
     const [spaces, setSpaces] = useState<Space[]>([]);
     const [currentSpace, setCurrentSpace] = useState<Space | null>(null);
-    const [loading, setLoading] = useState(true);
+    const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<Error | null>(null);
 
-    // Load user's spaces
+    // Set up real-time listener for spaces
     useEffect(() => {
         if (!user) {
             setSpaces([]);
             setCurrentSpace(null);
-            setLoading(false);
+            setIsLoading(false);
             return;
         }
 
-        loadSpaces();
-    }, [user]);
+        setIsLoading(true);
+        const db = getDb();
+        const spacesQuery = query(collection(db, "spaces"), where("userId", "==", user.uid));
 
-    // Set current space when spaces change
-    useEffect(() => {
-        if (spaces.length > 0 && !currentSpace) {
-            setCurrentSpace(spaces[0]);
-        }
-    }, [spaces, currentSpace]);
+        const unsubscribe = onSnapshot(
+            spacesQuery,
+            (snapshot) => {
+                const updatedSpaces = snapshot.docs.map(
+                    (doc) =>
+                        ({
+                            id: doc.id,
+                            ...doc.data(),
+                        } as Space)
+                );
 
-    const loadSpaces = async () => {
-        try {
-            setLoading(true);
-            setError(null);
-            const userSpaces = await getUserSpaces();
-            setSpaces(userSpaces);
-        } catch (err) {
-            console.error("Failed to load spaces:", err);
-            setError(err instanceof Error ? err : new Error("Failed to load spaces"));
-        } finally {
-            setLoading(false);
-        }
-    };
+                setSpaces(updatedSpaces);
 
-    const createNewSpace = async (data: CreateSpaceData) => {
-        try {
-            const newSpace = await createSpace(data);
-            setSpaces((prev) => [...prev, newSpace]);
-            if (!currentSpace) {
-                setCurrentSpace(newSpace);
+                // Update current space if it exists in the updated spaces
+                if (currentSpace) {
+                    const updatedCurrentSpace = updatedSpaces.find((s) => s.id === currentSpace.id);
+                    if (updatedCurrentSpace) {
+                        setCurrentSpace(updatedCurrentSpace);
+                    } else if (updatedSpaces.length > 0) {
+                        // If current space no longer exists, switch to the first available space
+                        setCurrentSpace(updatedSpaces[0]);
+                    } else {
+                        setCurrentSpace(null);
+                    }
+                } else if (updatedSpaces.length > 0) {
+                    setCurrentSpace(updatedSpaces[0]);
+                }
+
+                setIsLoading(false);
+                setError(null);
+            },
+            (err) => {
+                console.error("Failed to fetch spaces:", err);
+                setError(err as Error);
+                setIsLoading(false);
             }
-            return newSpace;
-        } catch (err) {
-            console.error("Failed to create space:", err);
-            throw err instanceof Error ? err : new Error("Failed to create space");
-        }
-    };
+        );
+
+        return () => unsubscribe();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [user]);
 
     const switchSpace = (spaceId: string) => {
         const space = spaces.find((s) => s.id === spaceId);
@@ -78,8 +89,15 @@ export function SpaceProvider({ children }: { children: React.ReactNode }) {
         }
     };
 
+    const createNewSpace = async (data: CreateSpaceData) => {
+        if (!user) throw new Error("No user logged in");
+        const newSpace = await createSpaceInDb(data);
+        return newSpace;
+    };
+
     const refreshSpaces = async () => {
-        await loadSpaces();
+        // The onSnapshot listener will automatically handle updates
+        // This function exists for backwards compatibility
     };
 
     return (
@@ -87,10 +105,10 @@ export function SpaceProvider({ children }: { children: React.ReactNode }) {
             value={{
                 spaces,
                 currentSpace,
-                loading,
+                isLoading,
                 error,
-                createNewSpace,
                 switchSpace,
+                createNewSpace,
                 refreshSpaces,
             }}
         >
