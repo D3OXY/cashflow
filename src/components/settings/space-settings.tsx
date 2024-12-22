@@ -12,9 +12,12 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { doc, updateDoc } from "firebase/firestore";
 import { getDb } from "@/lib/firebase/config";
-import { Loader2 } from "lucide-react";
+import { Loader2, Trash2 } from "lucide-react";
 import { useSpace } from "@/context/space";
 import { SPACE_ICONS } from "@/lib/constants";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { deleteSpace } from "@/lib/firebase/spaces";
+import { useRouter } from "next/navigation";
 
 interface SpaceSettingsProps {
     space: Space;
@@ -50,8 +53,11 @@ const CATEGORY_SORT_OPTIONS = [
 ] as const;
 
 export function SpaceSettings({ space }: SpaceSettingsProps) {
+    const router = useRouter();
     const { refreshSpaces } = useSpace();
     const [isUpdating, setIsUpdating] = useState<Record<string, boolean>>({});
+    const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
     const [spaceName, setSpaceName] = useState(space.name);
     const [spaceIcon, setSpaceIcon] = useState(space.icon);
     const [settings, setSettings] = useState({
@@ -127,198 +133,269 @@ export function SpaceSettings({ space }: SpaceSettingsProps) {
         updateSpace(key, value, section);
     };
 
+    const handleDeleteSpace = async () => {
+        try {
+            setIsDeleting(true);
+            await deleteSpace(space.id);
+            toast.success("Space deleted successfully");
+            setShowDeleteDialog(false);
+            router.push("/dashboard");
+        } catch (error) {
+            console.error("Failed to delete space:", error);
+            toast.error("Failed to delete space");
+        } finally {
+            setIsDeleting(false);
+        }
+    };
+
     return (
-        <div className="grid gap-4">
-            <Card>
-                <CardHeader>
-                    <CardTitle>Space Details</CardTitle>
-                    <CardDescription>Basic information about your space.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="name">Space Name</Label>
-                        <div className="flex gap-2">
-                            <Input id="name" value={spaceName} onChange={(e) => setSpaceName(e.target.value)} placeholder="Enter space name" />
-                            <Button onClick={() => updateSpace("name", spaceName, "details")} disabled={isUpdating.details || spaceName === space.name}>
-                                {isUpdating.details ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save"}
-                            </Button>
-                        </div>
-                    </div>
-
-                    <div className="space-y-2">
-                        <Label htmlFor="icon">Space Icon</Label>
-                        <div className="flex gap-2">
-                            <Select
-                                value={spaceIcon}
-                                onValueChange={(value) => {
-                                    setSpaceIcon(value);
-                                    updateSpace("icon", value, "details");
-                                }}
-                            >
-                                <SelectTrigger id="icon" className="w-full">
-                                    <SelectValue>
-                                        <span className="text-xl">{spaceIcon}</span>
-                                    </SelectValue>
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {SPACE_ICONS.map((icon) => (
-                                        <SelectItem key={icon.value} value={icon.value}>
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-xl">{icon.value}</span>
-                                                <span className="text-muted-foreground">{icon.label}</span>
-                                            </div>
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                            {isUpdating.details && <Loader2 className="h-4 w-4 animate-spin" />}
-                        </div>
-                    </div>
-
-                    <div className="space-y-2">
-                        <Label htmlFor="currency">Currency</Label>
-                        <div className="flex gap-2">
-                            <Select value={settings.currency} onValueChange={(value) => handleSettingChange("currency", value as typeof settings.currency, "currency")}>
-                                <SelectTrigger id="currency">
-                                    <SelectValue placeholder="Select currency" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {Object.entries(CURRENCIES).map(([value, label]) => (
-                                        <SelectItem key={value} value={value}>
-                                            {label}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                            {isUpdating.currency && <Loader2 className="h-4 w-4 animate-spin" />}
-                        </div>
-                    </div>
-                </CardContent>
-            </Card>
-
-            <Card>
-                <CardHeader>
-                    <CardTitle>View Settings</CardTitle>
-                    <CardDescription>Configure how your transactions are displayed.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                    <div className="space-y-2">
-                        <Label>Default View</Label>
+        <>
+            <div className="grid gap-4">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Space Details</CardTitle>
+                        <CardDescription>Basic information about your space.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
                         <div className="space-y-2">
-                            <RadioGroup
-                                value={settings.defaultView}
-                                onValueChange={(value) => handleSettingChange("defaultView", value as typeof settings.defaultView, "view")}
-                                className="grid grid-cols-2 gap-4"
-                            >
-                                {DEFAULT_VIEWS.map((view) => (
-                                    <div key={view.value}>
-                                        <RadioGroupItem value={view.value} id={view.value} className="peer sr-only" />
+                            <Label htmlFor="name">Space Name</Label>
+                            <div className="flex gap-2">
+                                <Input id="name" value={spaceName} onChange={(e) => setSpaceName(e.target.value)} placeholder="Enter space name" />
+                                <Button onClick={() => updateSpace("name", spaceName, "details")} disabled={isUpdating.details || spaceName === space.name}>
+                                    {isUpdating.details ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save"}
+                                </Button>
+                            </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="icon">Space Icon</Label>
+                            <div className="flex gap-2">
+                                <Select
+                                    value={spaceIcon}
+                                    onValueChange={(value) => {
+                                        setSpaceIcon(value);
+                                        updateSpace("icon", value, "details");
+                                    }}
+                                >
+                                    <SelectTrigger id="icon" className="w-full">
+                                        <SelectValue>
+                                            <span className="text-xl">{spaceIcon}</span>
+                                        </SelectValue>
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {SPACE_ICONS.map((icon) => (
+                                            <SelectItem key={icon.value} value={icon.value}>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-xl">{icon.value}</span>
+                                                    <span className="text-muted-foreground">{icon.label}</span>
+                                                </div>
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                {isUpdating.details && <Loader2 className="h-4 w-4 animate-spin" />}
+                            </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="currency">Currency</Label>
+                            <div className="flex gap-2">
+                                <Select value={settings.currency} onValueChange={(value) => handleSettingChange("currency", value as typeof settings.currency, "currency")}>
+                                    <SelectTrigger id="currency">
+                                        <SelectValue placeholder="Select currency" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {Object.entries(CURRENCIES).map(([value, label]) => (
+                                            <SelectItem key={value} value={value}>
+                                                {label}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                {isUpdating.currency && <Loader2 className="h-4 w-4 animate-spin" />}
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardHeader>
+                        <CardTitle>View Settings</CardTitle>
+                        <CardDescription>Configure how your transactions are displayed.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                        <div className="space-y-2">
+                            <Label>Default View</Label>
+                            <div className="space-y-2">
+                                <RadioGroup
+                                    value={settings.defaultView}
+                                    onValueChange={(value) => handleSettingChange("defaultView", value as typeof settings.defaultView, "view")}
+                                    className="grid grid-cols-2 gap-4"
+                                >
+                                    {DEFAULT_VIEWS.map((view) => (
+                                        <div key={view.value}>
+                                            <RadioGroupItem value={view.value} id={view.value} className="peer sr-only" />
+                                            <Label
+                                                htmlFor={view.value}
+                                                className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-transparent p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
+                                            >
+                                                {view.label}
+                                            </Label>
+                                        </div>
+                                    ))}
+                                </RadioGroup>
+                                {isUpdating.view && <Loader2 className="h-4 w-4 animate-spin" />}
+                            </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="startOfWeek">Start of Week</Label>
+                            <div className="flex gap-2">
+                                <Select value={settings.startOfWeek} onValueChange={(value) => handleSettingChange("startOfWeek", value, "week")}>
+                                    <SelectTrigger id="startOfWeek">
+                                        <SelectValue placeholder="Select start day" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {DAYS_OF_WEEK.map((day) => (
+                                            <SelectItem key={day.value} value={day.value}>
+                                                {day.label}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                {isUpdating.week && <Loader2 className="h-4 w-4 animate-spin" />}
+                            </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="categorySortOrder">Category Sort Order</Label>
+                            <div className="flex gap-2">
+                                <Select
+                                    value={settings.categorySortOrder}
+                                    onValueChange={(value) => handleSettingChange("categorySortOrder", value as typeof settings.categorySortOrder, "sort")}
+                                >
+                                    <SelectTrigger id="categorySortOrder">
+                                        <SelectValue placeholder="Select sort order" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {CATEGORY_SORT_OPTIONS.map((option) => (
+                                            <SelectItem key={option.value} value={option.value}>
+                                                {option.label}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                {isUpdating.sort && <Loader2 className="h-4 w-4 animate-spin" />}
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Transaction Settings</CardTitle>
+                        <CardDescription>Configure default transaction behavior.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div className="space-y-2">
+                            <Label>Default Transaction Type</Label>
+                            <div className="space-y-2">
+                                <RadioGroup
+                                    value={settings.defaultTransactionType}
+                                    onValueChange={(value) => handleSettingChange("defaultTransactionType", value as typeof settings.defaultTransactionType, "transaction")}
+                                    className="grid grid-cols-2 gap-4"
+                                >
+                                    <div>
+                                        <RadioGroupItem value="Income" id="income" className="peer sr-only" />
                                         <Label
-                                            htmlFor={view.value}
+                                            htmlFor="income"
                                             className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-transparent p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
                                         >
-                                            {view.label}
+                                            Income
                                         </Label>
                                     </div>
-                                ))}
-                            </RadioGroup>
-                            {isUpdating.view && <Loader2 className="h-4 w-4 animate-spin" />}
+                                    <div>
+                                        <RadioGroupItem value="Expense" id="expense" className="peer sr-only" />
+                                        <Label
+                                            htmlFor="expense"
+                                            className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-transparent p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
+                                        >
+                                            Expense
+                                        </Label>
+                                    </div>
+                                </RadioGroup>
+                                {isUpdating.transaction && <Loader2 className="h-4 w-4 animate-spin" />}
+                            </div>
                         </div>
-                    </div>
 
-                    <div className="space-y-2">
-                        <Label htmlFor="startOfWeek">Start of Week</Label>
-                        <div className="flex gap-2">
-                            <Select value={settings.startOfWeek} onValueChange={(value) => handleSettingChange("startOfWeek", value, "week")}>
-                                <SelectTrigger id="startOfWeek">
-                                    <SelectValue placeholder="Select start day" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {DAYS_OF_WEEK.map((day) => (
-                                        <SelectItem key={day.value} value={day.value}>
-                                            {day.label}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                            {isUpdating.week && <Loader2 className="h-4 w-4 animate-spin" />}
+                        <div className="flex items-center justify-between space-x-2">
+                            <Label htmlFor="showRunningBalance">Show Running Balance</Label>
+                            <div className="flex items-center gap-2">
+                                <Switch
+                                    id="showRunningBalance"
+                                    checked={settings.showRunningBalance}
+                                    onCheckedChange={(checked) => handleSettingChange("showRunningBalance", checked, "balance")}
+                                />
+                                {isUpdating.balance && <Loader2 className="h-4 w-4 animate-spin" />}
+                            </div>
                         </div>
-                    </div>
+                    </CardContent>
+                </Card>
 
-                    <div className="space-y-2">
-                        <Label htmlFor="categorySortOrder">Category Sort Order</Label>
-                        <div className="flex gap-2">
-                            <Select
-                                value={settings.categorySortOrder}
-                                onValueChange={(value) => handleSettingChange("categorySortOrder", value as typeof settings.categorySortOrder, "sort")}
-                            >
-                                <SelectTrigger id="categorySortOrder">
-                                    <SelectValue placeholder="Select sort order" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {CATEGORY_SORT_OPTIONS.map((option) => (
-                                        <SelectItem key={option.value} value={option.value}>
-                                            {option.label}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                            {isUpdating.sort && <Loader2 className="h-4 w-4 animate-spin" />}
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Danger Zone</CardTitle>
+                        <CardDescription>Irreversible and destructive actions.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="flex items-center justify-between space-x-4">
+                            <div>
+                                <h4 className="text-sm font-semibold">Delete Space</h4>
+                                <p className="text-sm text-muted-foreground">Permanently delete this space and all of its data. This action cannot be undone.</p>
+                            </div>
+                            <Button variant="destructive" onClick={() => setShowDeleteDialog(true)}>
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Delete Space
+                            </Button>
                         </div>
-                    </div>
-                </CardContent>
-            </Card>
+                    </CardContent>
+                </Card>
+            </div>
 
-            <Card>
-                <CardHeader>
-                    <CardTitle>Transaction Settings</CardTitle>
-                    <CardDescription>Configure default transaction behavior.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                        <Label>Default Transaction Type</Label>
-                        <div className="space-y-2">
-                            <RadioGroup
-                                value={settings.defaultTransactionType}
-                                onValueChange={(value) => handleSettingChange("defaultTransactionType", value as typeof settings.defaultTransactionType, "transaction")}
-                                className="grid grid-cols-2 gap-4"
-                            >
-                                <div>
-                                    <RadioGroupItem value="Income" id="income" className="peer sr-only" />
-                                    <Label
-                                        htmlFor="income"
-                                        className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-transparent p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
-                                    >
-                                        Income
-                                    </Label>
-                                </div>
-                                <div>
-                                    <RadioGroupItem value="Expense" id="expense" className="peer sr-only" />
-                                    <Label
-                                        htmlFor="expense"
-                                        className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-transparent p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
-                                    >
-                                        Expense
-                                    </Label>
-                                </div>
-                            </RadioGroup>
-                            {isUpdating.transaction && <Loader2 className="h-4 w-4 animate-spin" />}
-                        </div>
-                    </div>
-
-                    <div className="flex items-center justify-between space-x-2">
-                        <Label htmlFor="showRunningBalance">Show Running Balance</Label>
+            <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Delete Space</DialogTitle>
+                        <DialogDescription>
+                            Are you sure you want to delete this space? This action cannot be undone and will permanently delete all data associated with this space.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
                         <div className="flex items-center gap-2">
-                            <Switch
-                                id="showRunningBalance"
-                                checked={settings.showRunningBalance}
-                                onCheckedChange={(checked) => handleSettingChange("showRunningBalance", checked, "balance")}
-                            />
-                            {isUpdating.balance && <Loader2 className="h-4 w-4 animate-spin" />}
+                            <span className="text-xl">{space.icon}</span>
+                            <span className="font-medium">{space.name}</span>
                         </div>
                     </div>
-                </CardContent>
-            </Card>
-        </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setShowDeleteDialog(false)} disabled={isDeleting}>
+                            Cancel
+                        </Button>
+                        <Button variant="destructive" onClick={handleDeleteSpace} disabled={isDeleting}>
+                            {isDeleting ? (
+                                <>
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    Deleting...
+                                </>
+                            ) : (
+                                <>
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    Delete Space
+                                </>
+                            )}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+        </>
     );
 }

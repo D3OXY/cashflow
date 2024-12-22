@@ -1,6 +1,7 @@
-import { collection, doc, getDoc, getDocs, query, setDoc, where } from "firebase/firestore";
-import { getDb, getFirebaseAuth } from "./config";
-import { Space } from "@/lib/types/space";
+import { collection, doc, getDoc, getDocs, query, setDoc, where, deleteDoc } from "firebase/firestore";
+import { getDb } from "./config";
+import { getAuth } from "firebase/auth";
+import type { Space } from "../types/space";
 
 const SPACES_COLLECTION = "spaces";
 
@@ -45,7 +46,7 @@ export async function getSpace(id: string): Promise<Space | null> {
 }
 
 export async function getUserSpaces(): Promise<Space[]> {
-    const auth = getFirebaseAuth();
+    const auth = getAuth();
     const user = auth.currentUser;
 
     if (!user) {
@@ -57,4 +58,27 @@ export async function getUserSpaces(): Promise<Space[]> {
 
     const snapshot = await getDocs(spacesQuery);
     return snapshot.docs.map((doc) => doc.data() as Space);
+}
+
+export async function deleteSpace(spaceId: string): Promise<void> {
+    const auth = getAuth();
+    const user = auth.currentUser;
+    if (!user) {
+        throw new Error("User not authenticated");
+    }
+
+    const db = getDb();
+    const spaceRef = doc(db, "spaces", spaceId);
+    const spaceDoc = await getDoc(spaceRef);
+
+    if (!spaceDoc.exists()) {
+        throw new Error("Space not found");
+    }
+
+    const spaceData = spaceDoc.data() as Space;
+    if (spaceData.userId !== user.uid) {
+        throw new Error("Unauthorized to delete this space");
+    }
+
+    await deleteDoc(spaceRef);
 }
