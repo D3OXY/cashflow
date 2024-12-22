@@ -17,12 +17,6 @@ import { Loader2 } from "lucide-react";
 import { PROFILE_IMAGES } from "@/lib/constants";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
-const CURRENCIES = {
-    USD: "US Dollar",
-    EUR: "Euro",
-    INR: "Indian Rupee",
-} as const;
-
 export function UserSettings() {
     const { theme, setTheme } = useTheme();
     const { user } = useAuth();
@@ -145,30 +139,6 @@ export function UserSettings() {
                                 <SelectItem value="light">Light</SelectItem>
                                 <SelectItem value="dark">Dark</SelectItem>
                                 <SelectItem value="system">System</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-                </CardContent>
-            </Card>
-
-            <Card>
-                <CardHeader>
-                    <CardTitle>Regional</CardTitle>
-                    <CardDescription>Manage your regional preferences.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="currency">Default Currency</Label>
-                        <Select defaultValue="USD">
-                            <SelectTrigger id="currency">
-                                <SelectValue placeholder="Select currency" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {Object.entries(CURRENCIES).map(([value, label]) => (
-                                    <SelectItem key={value} value={value}>
-                                        {label}
-                                    </SelectItem>
-                                ))}
                             </SelectContent>
                         </Select>
                     </div>
