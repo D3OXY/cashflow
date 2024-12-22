@@ -20,7 +20,6 @@ export interface Space {
         startOfWeek: 0 | 1 | 2 | 3 | 4 | 5 | 6;
         defaultTransactionType: "Income" | "Expense";
         showRunningBalance: boolean;
-        categorySortOrder: "alphabetical" | "custom" | "usage";
     };
 }
 

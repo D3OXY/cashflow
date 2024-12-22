@@ -64,12 +64,6 @@ const DEFAULT_VIEWS = [
     { value: "yearly", label: "Yearly" },
 ] as const;
 
-const CATEGORY_SORT_OPTIONS = [
-    { value: "alphabetical", label: "Alphabetical" },
-    { value: "custom", label: "Custom Order" },
-    { value: "usage", label: "By Usage" },
-] as const;
-
 export function SpaceSettings({ space }: SpaceSettingsProps) {
     const router = useRouter();
     const { refreshSpaces } = useSpace();
@@ -87,7 +81,6 @@ export function SpaceSettings({ space }: SpaceSettingsProps) {
         startOfWeek: String(space.settings?.startOfWeek || "1"),
         defaultTransactionType: space.settings?.defaultTransactionType || "Expense",
         showRunningBalance: space.settings?.showRunningBalance ?? true,
-        categorySortOrder: space.settings?.categorySortOrder || "alphabetical",
         currency: space.currency,
     });
 
@@ -99,7 +92,6 @@ export function SpaceSettings({ space }: SpaceSettingsProps) {
             startOfWeek: String(space.settings?.startOfWeek || "1"),
             defaultTransactionType: space.settings?.defaultTransactionType || "Expense",
             showRunningBalance: space.settings?.showRunningBalance ?? true,
-            categorySortOrder: space.settings?.categorySortOrder || "alphabetical",
             currency: space.currency,
         });
     }, [space]);
@@ -370,11 +362,11 @@ export function SpaceSettings({ space }: SpaceSettingsProps) {
                         </div>
 
                         <div className="space-y-2">
-                            <Label htmlFor="startOfWeek">Start of Week</Label>
+                            <Label>Start of Week</Label>
                             <div className="flex gap-2">
-                                <Select value={settings.startOfWeek} onValueChange={(value) => handleSettingChange("startOfWeek", value, "week")}>
-                                    <SelectTrigger id="startOfWeek">
-                                        <SelectValue placeholder="Select start day" />
+                                <Select value={settings.startOfWeek} onValueChange={(value) => handleSettingChange("startOfWeek", value as typeof settings.startOfWeek, "week")}>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select start of week" />
                                     </SelectTrigger>
                                     <SelectContent>
                                         {DAYS_OF_WEEK.map((day) => (
@@ -385,28 +377,6 @@ export function SpaceSettings({ space }: SpaceSettingsProps) {
                                     </SelectContent>
                                 </Select>
                                 {isUpdating.week && <Loader2 className="h-4 w-4 animate-spin" />}
-                            </div>
-                        </div>
-
-                        <div className="space-y-2">
-                            <Label htmlFor="categorySortOrder">Category Sort Order</Label>
-                            <div className="flex gap-2">
-                                <Select
-                                    value={settings.categorySortOrder}
-                                    onValueChange={(value) => handleSettingChange("categorySortOrder", value as typeof settings.categorySortOrder, "sort")}
-                                >
-                                    <SelectTrigger id="categorySortOrder">
-                                        <SelectValue placeholder="Select sort order" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {CATEGORY_SORT_OPTIONS.map((option) => (
-                                            <SelectItem key={option.value} value={option.value}>
-                                                {option.label}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                                {isUpdating.sort && <Loader2 className="h-4 w-4 animate-spin" />}
                             </div>
                         </div>
                     </CardContent>
