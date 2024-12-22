@@ -53,7 +53,7 @@ export function TransactionForm({ transaction, onSuccess }: TransactionFormProps
             : {
                   type: currentSpace?.settings?.defaultTransactionType || "Expense",
                   date: new Date(),
-                  status: "pending",
+                  status: "cleared",
               },
     });
 
@@ -92,7 +92,7 @@ export function TransactionForm({ transaction, onSuccess }: TransactionFormProps
                     render={({ field }) => (
                         <FormItem>
                             <FormLabel>Type</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <Select onValueChange={field.onChange} value={field.value}>
                                 <FormControl>
                                     <SelectTrigger>
                                         <SelectValue placeholder="Select type" />
@@ -144,7 +144,7 @@ export function TransactionForm({ transaction, onSuccess }: TransactionFormProps
                     render={({ field }) => (
                         <FormItem>
                             <FormLabel>Category</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <Select onValueChange={field.onChange} value={field.value}>
                                 <FormControl>
                                     <SelectTrigger>
                                         <SelectValue>
@@ -216,7 +216,7 @@ export function TransactionForm({ transaction, onSuccess }: TransactionFormProps
                     render={({ field }) => (
                         <FormItem>
                             <FormLabel>Status</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <Select onValueChange={field.onChange} value={field.value}>
                                 <FormControl>
                                     <SelectTrigger>
                                         <SelectValue placeholder="Select status" />
