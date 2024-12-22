@@ -4,10 +4,13 @@
         "esnext",
         "firebaseapp",
         "firestore",
+        "firestorerule",
+        "firestorerules",
         "geist",
         "hostable",
         "shadcn",
         "tauri",
+        "vercel",
         "VITE"
     ]
 }
