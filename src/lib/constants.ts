@@ -34,8 +34,8 @@ export const CATEGORY_ICONS = [
     { label: "Insurance", value: "🛡️" },
     { label: "Clothing", value: "👕" },
     { label: "Beauty", value: "💅" },
-    { label: "Gifts", value: "🎁" },
     { label: "Sports", value: "⚽" },
+    { label: "Charity", value: "🤝" },
     { label: "Other", value: "📦" },
 ] as const;
 
