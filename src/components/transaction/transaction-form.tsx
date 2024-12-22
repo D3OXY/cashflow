@@ -23,8 +23,8 @@ const transactionSchema = z.object({
     date: z.date(),
     category: z.string().min(1, "Category is required"),
     amount: z.number().min(0.01, "Amount must be greater than 0"),
-    note: z.string().optional(),
-    status: z.enum(["pending", "cleared", "reconciled"]).default("pending"),
+    note: z.string().optional().default(""),
+    status: z.enum(["pending", "cleared", "reconciled"]).default("cleared"),
 });
 
 type TransactionFormData = z.infer<typeof transactionSchema>;
@@ -41,20 +41,14 @@ export function TransactionForm({ transaction, onSuccess }: TransactionFormProps
 
     const form = useForm<TransactionFormData>({
         resolver: zodResolver(transactionSchema),
-        defaultValues: transaction
-            ? {
-                  type: transaction.type,
-                  date: new Date(transaction.date),
-                  category: transaction.category,
-                  amount: transaction.amount,
-                  note: transaction.note,
-                  status: transaction.status,
-              }
-            : {
-                  type: currentSpace?.settings?.defaultTransactionType || "Expense",
-                  date: new Date(),
-                  status: "cleared",
-              },
+        defaultValues: {
+            type: transaction?.type ?? currentSpace?.settings?.defaultTransactionType ?? "Expense",
+            date: transaction ? new Date(transaction.date) : new Date(),
+            category: transaction?.category ?? "",
+            amount: transaction?.amount ?? 0,
+            note: transaction?.note ?? "",
+            status: transaction?.status ?? "cleared",
+        },
     });
 
     const onSubmit = async (data: TransactionFormData) => {
@@ -76,7 +70,14 @@ export function TransactionForm({ transaction, onSuccess }: TransactionFormProps
             }
             onSuccess?.();
             if (!transaction) {
-                form.reset();
+                form.reset({
+                    type: currentSpace?.settings?.defaultTransactionType ?? "Expense",
+                    date: new Date(),
+                    category: "",
+                    amount: 0,
+                    note: "",
+                    status: "cleared",
+                });
             }
         } finally {
             setIsSubmitting(false);
