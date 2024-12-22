@@ -1,86 +1,81 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
-import { useAuth } from "@/context/auth";
-import type { Space } from "@/lib/types/space";
-import { createSpace, getUserSpaces, getSpace } from "@/lib/firebase/spaces";
-import { appStore } from "@/lib/tauri-store";
-import type { Store } from "@/lib/types/store";
+import { Space } from "@/lib/types/space";
+import { createSpace, getUserSpaces, CreateSpaceData } from "@/lib/firebase/spaces";
+import { useAuth } from "./auth";
 
-interface SpaceContextValue {
+interface SpaceContextType {
     spaces: Space[];
     currentSpace: Space | null;
-    isLoading: boolean;
-    createNewSpace: (data: Partial<Space>) => Promise<Space>;
-    switchSpace: (spaceId: string) => Promise<void>;
+    loading: boolean;
+    error: Error | null;
+    createNewSpace: (data: CreateSpaceData) => Promise<Space>;
+    switchSpace: (spaceId: string) => void;
     refreshSpaces: () => Promise<void>;
 }
 
-const SpaceContext = createContext<SpaceContextValue | null>(null);
+const SpaceContext = createContext<SpaceContextType | null>(null);
 
 export function SpaceProvider({ children }: { children: React.ReactNode }) {
     const { user } = useAuth();
     const [spaces, setSpaces] = useState<Space[]>([]);
     const [currentSpace, setCurrentSpace] = useState<Space | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<Error | null>(null);
 
-    const loadSpaces = async () => {
+    // Load user's spaces
+    useEffect(() => {
         if (!user) {
             setSpaces([]);
             setCurrentSpace(null);
-            setIsLoading(false);
+            setLoading(false);
             return;
         }
 
-        try {
-            const userSpaces = await getUserSpaces(user.uid);
-            setSpaces(userSpaces);
-
-            // Load last used space from store
-            const state = (await appStore.get<"space-state">("space-state")) as Store["space-state"];
-            const lastSpaceId = state?.lastSpaceId;
-
-            if (lastSpaceId && userSpaces.some((space) => space.id === lastSpaceId)) {
-                const space = await getSpace(user.uid, lastSpaceId);
-                setCurrentSpace(space);
-            } else if (userSpaces.length > 0) {
-                setCurrentSpace(userSpaces[0]);
-                await appStore.set("space-state", { lastSpaceId: userSpaces[0].id });
-            }
-        } catch (error) {
-            console.error("Failed to load spaces:", error);
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    useEffect(() => {
         loadSpaces();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [user]);
 
-    const createNewSpace = async (data: Partial<Space>) => {
-        if (!user) throw new Error("User not authenticated");
-
-        const newSpace = await createSpace(user.uid, data);
-        setSpaces((prev) => [newSpace, ...prev]);
-
-        if (!currentSpace) {
-            setCurrentSpace(newSpace);
-            await appStore.set("space-state", { lastSpaceId: newSpace.id });
+    // Set current space when spaces change
+    useEffect(() => {
+        if (spaces.length > 0 && !currentSpace) {
+            setCurrentSpace(spaces[0]);
         }
+    }, [spaces, currentSpace]);
 
-        return newSpace;
+    const loadSpaces = async () => {
+        try {
+            setLoading(true);
+            setError(null);
+            const userSpaces = await getUserSpaces();
+            setSpaces(userSpaces);
+        } catch (err) {
+            console.error("Failed to load spaces:", err);
+            setError(err instanceof Error ? err : new Error("Failed to load spaces"));
+        } finally {
+            setLoading(false);
+        }
     };
 
-    const switchSpace = async (spaceId: string) => {
-        if (!user) throw new Error("User not authenticated");
+    const createNewSpace = async (data: CreateSpaceData) => {
+        try {
+            const newSpace = await createSpace(data);
+            setSpaces((prev) => [...prev, newSpace]);
+            if (!currentSpace) {
+                setCurrentSpace(newSpace);
+            }
+            return newSpace;
+        } catch (err) {
+            console.error("Failed to create space:", err);
+            throw err instanceof Error ? err : new Error("Failed to create space");
+        }
+    };
 
-        const space = await getSpace(user.uid, spaceId);
-        if (!space) throw new Error("Space not found");
-
-        setCurrentSpace(space);
-        await appStore.set("space-state", { lastSpaceId: spaceId });
+    const switchSpace = (spaceId: string) => {
+        const space = spaces.find((s) => s.id === spaceId);
+        if (space) {
+            setCurrentSpace(space);
+        }
     };
 
     const refreshSpaces = async () => {
@@ -92,7 +87,8 @@ export function SpaceProvider({ children }: { children: React.ReactNode }) {
             value={{
                 spaces,
                 currentSpace,
-                isLoading,
+                loading,
+                error,
                 createNewSpace,
                 switchSpace,
                 refreshSpaces,
@@ -106,7 +102,7 @@ export function SpaceProvider({ children }: { children: React.ReactNode }) {
 export function useSpace() {
     const context = useContext(SpaceContext);
     if (!context) {
-        throw new Error("useSpace must be used within SpaceProvider");
+        throw new Error("useSpace must be used within a SpaceProvider");
     }
     return context;
 }

@@ -22,7 +22,7 @@ export function SpaceSwitcher() {
         if (!newSpaceName) return;
 
         try {
-            await createNewSpace({ name: newSpaceName });
+            await createNewSpace({ name: newSpaceName, currency: "USD" });
             setShowNewSpaceDialog(false);
             setNewSpaceName("");
             toast.success("Space created successfully");

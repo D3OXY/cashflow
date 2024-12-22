@@ -1,24 +1,53 @@
-import { initializeApp, getApp, getApps } from "firebase/app";
-import { getAuth } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
-import type { FirebaseConfig } from "@/lib/types/store";
+import { initializeApp, FirebaseApp } from "firebase/app";
+import { getAuth, Auth } from "firebase/auth";
+import { getFirestore, Firestore } from "firebase/firestore";
 
-let app = getApps().length ? getApp() : null;
-let auth = app ? getAuth(app) : null;
-let db = app ? getFirestore(app) : null;
-
-export function initializeFirebase(config: FirebaseConfig) {
-    if (!app) {
-        app = initializeApp(config);
-        auth = getAuth(app);
-        db = getFirestore(app);
-    }
-    return { app, auth, db };
+interface FirebaseInstances {
+    app: FirebaseApp;
+    auth: Auth;
+    db: Firestore;
 }
 
-export function getFirebase() {
-    if (!app || !auth || !db) {
-        throw new Error("Firebase not initialized");
+let instances: FirebaseInstances | null = null;
+
+export interface FirebaseConfig {
+    apiKey: string;
+    authDomain: string;
+    projectId: string;
+    storageBucket: string;
+    messagingSenderId: string;
+    appId: string;
+}
+
+export function initializeFirebase(config: FirebaseConfig): FirebaseInstances {
+    if (instances) return instances;
+
+    try {
+        const app = initializeApp(config);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        instances = { app, auth, db };
+        return instances;
+    } catch (error) {
+        console.error("Error initializing Firebase:", error);
+        throw error;
     }
-    return { app, auth, db };
+}
+
+export function getFirebase(): FirebaseInstances {
+    if (!instances) {
+        throw new Error("Firebase not initialized. Call initializeFirebase first.");
+    }
+
+    return instances;
+}
+
+// Export individual instances for convenience
+export function getDb(): Firestore {
+    return getFirebase().db;
+}
+
+export function getFirebaseAuth(): Auth {
+    return getFirebase().auth;
 }

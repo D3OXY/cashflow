@@ -3,11 +3,9 @@ import type { LucideIcon } from "lucide-react";
 export interface Category {
     id: string;
     name: string;
-    type: "Income" | "Expense" | "Both";
+    type: "Income" | "Expense";
     color: string;
     icon: LucideIcon;
-    parentId?: string; // For subcategories
-    sortOrder?: number;
 }
 
 export interface Space {
@@ -18,7 +16,7 @@ export interface Space {
     categories: Category[];
     createdAt: string;
     updatedAt: string;
-    settings: SpaceSettings;
+    userId: string;
 }
 
 export interface SpaceSettings {
