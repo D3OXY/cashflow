@@ -4,6 +4,7 @@
         "esnext",
         "firebaseapp",
         "firestore",
+        "geist",
         "hostable",
         "shadcn",
         "tauri",
