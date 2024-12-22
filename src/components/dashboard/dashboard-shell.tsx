@@ -81,29 +81,43 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                     </ScrollArea>
                 </div>
                 <div className="border-t">
-                    <div className={cn("px-3 py-2", !sidebarOpen && "py-3")}>
-                        <div className="flex items-center mb-2">
-                            <Avatar className="h-8 w-8">
-                                <AvatarImage src={user?.photoURL || undefined} alt={user?.displayName || undefined} />
-                                <AvatarFallback>{user?.displayName?.[0] || user?.email?.[0]}</AvatarFallback>
-                            </Avatar>
-                            {sidebarOpen && (
+                    {sidebarOpen ? (
+                        <div className="px-3 py-2">
+                            <div className="flex items-center mb-2">
+                                <Avatar className="h-8 w-8">
+                                    <AvatarImage src={user?.photoURL || undefined} alt={user?.displayName || undefined} />
+                                    <AvatarFallback>{user?.displayName?.[0] || user?.email?.[0]}</AvatarFallback>
+                                </Avatar>
                                 <div className="ml-2 overflow-hidden">
                                     <p className="text-sm font-medium truncate text-sidebar-foreground">{user?.displayName || "User"}</p>
                                     <p className="text-xs truncate text-sidebar-foreground/60">{user?.email}</p>
                                 </div>
-                            )}
+                            </div>
+                            <Button
+                                variant="ghost"
+                                onClick={signOut}
+                                className="w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                            >
+                                <LogOut className="h-4 w-4" />
+                                <span className="ml-2">Sign out</span>
+                            </Button>
                         </div>
-                        <Button
-                            variant="ghost"
-                            size={sidebarOpen ? "default" : "icon"}
-                            onClick={signOut}
-                            className="w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                        >
-                            <LogOut className="h-4 w-4" />
-                            {sidebarOpen && <span className="ml-2">Sign out</span>}
-                        </Button>
-                    </div>
+                    ) : (
+                        <div className="flex flex-col items-center gap-1 py-2">
+                            <Avatar className="h-8 w-8">
+                                <AvatarImage src={user?.photoURL || undefined} alt={user?.displayName || undefined} />
+                                <AvatarFallback>{user?.displayName?.[0] || user?.email?.[0]}</AvatarFallback>
+                            </Avatar>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={signOut}
+                                className="h-8 w-8 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                            >
+                                <LogOut className="h-4 w-4" />
+                            </Button>
+                        </div>
+                    )}
                 </div>
             </aside>
             <main className="flex-1 overflow-y-auto">
