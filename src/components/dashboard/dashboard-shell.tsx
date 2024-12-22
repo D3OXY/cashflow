@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { SpaceSwitcher } from "@/components/space/space-switcher";
-import { Menu, Settings, LayoutDashboard, LogOut, Moon, Sun } from "lucide-react";
+import { Menu, Settings, LayoutDashboard, LogOut, Moon, Sun, BarChart } from "lucide-react";
 import { useAuth } from "@/context/auth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Link from "next/link";
@@ -74,6 +74,17 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                                         >
                                             <LayoutDashboard className="mr-2 h-4 w-4" />
                                             {sidebarOpen && <span>Overview</span>}
+                                        </Button>
+                                    </Link>
+                                    <Link href="/dashboard/analytics" className="block">
+                                        <Button
+                                            variant="ghost"
+                                            className={cn("w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground", {
+                                                "bg-sidebar-accent": pathname === "/dashboard/analytics",
+                                            })}
+                                        >
+                                            <BarChart className="mr-2 h-4 w-4" />
+                                            Analytics
                                         </Button>
                                     </Link>
                                     <Link href="/dashboard/settings" className="block">
@@ -164,6 +175,17 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                                             >
                                                 <LayoutDashboard className="mr-2 h-4 w-4" />
                                                 Overview
+                                            </Button>
+                                        </Link>
+                                        <Link href="/dashboard/analytics" className="block">
+                                            <Button
+                                                variant="ghost"
+                                                className={cn("w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground", {
+                                                    "bg-sidebar-accent": pathname === "/dashboard/analytics",
+                                                })}
+                                            >
+                                                <BarChart className="mr-2 h-4 w-4" />
+                                                Analytics
                                             </Button>
                                         </Link>
                                         <Link href="/dashboard/settings" className="block">

@@ -4,15 +4,14 @@ import { useTransaction } from "@/context/transaction";
 import { useSpace } from "@/context/space";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, startOfDay, endOfDay, startOfYear, endOfYear, isWithinInterval } from "date-fns";
+import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, startOfDay, endOfDay, startOfYear, endOfYear } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { DatePickerWithRange } from "./date-range-picker";
+import DateRangePicker from "./date-range-picker";
 import { useState } from "react";
-import type { DateRange } from "react-day-picker";
 import type { Transaction } from "@/lib/types/transaction";
 
 interface TransactionWithBalance extends Transaction {
@@ -22,7 +21,10 @@ interface TransactionWithBalance extends Transaction {
 export default function TransactionList() {
     const { transactions, isLoading, error, deleteTransaction } = useTransaction();
     const { currentSpace } = useSpace();
-    const [date, setDate] = useState<DateRange | undefined>(() => {
+    const [date, setDate] = useState<{
+        from: Date;
+        to: Date;
+    }>(() => {
         const today = new Date();
         const defaultView = currentSpace?.settings?.defaultView || "monthly";
 
@@ -65,10 +67,7 @@ export default function TransactionList() {
     const filteredTransactions = transactions?.filter((transaction) => {
         if (!date?.from) return true;
         const transactionDate = new Date(transaction.date);
-        if (date.to) {
-            return isWithinInterval(transactionDate, { start: date.from, end: date.to });
-        }
-        return format(transactionDate, "yyyy-MM-dd") === format(date.from, "yyyy-MM-dd");
+        return transactionDate >= date.from && transactionDate <= date.to;
     });
 
     const calculateRunningBalance = (transactions: Transaction[]): TransactionWithBalance[] => {
@@ -113,7 +112,7 @@ export default function TransactionList() {
                         <CardTitle>Transactions</CardTitle>
                         <CardDescription>Your recent transactions</CardDescription>
                     </div>
-                    <DatePickerWithRange date={date} onDateChange={setDate} />
+                    <DateRangePicker date={date} setDate={setDate} />
                 </div>
             </CardHeader>
             <CardContent>
