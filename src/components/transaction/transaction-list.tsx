@@ -13,6 +13,11 @@ import { toast } from "sonner";
 import { DatePickerWithRange } from "./date-range-picker";
 import { useState } from "react";
 import type { DateRange } from "react-day-picker";
+import type { Transaction } from "@/lib/types/transaction";
+
+interface TransactionWithBalance extends Transaction {
+    runningBalance: number;
+}
 
 export default function TransactionList() {
     const { transactions, isLoading, error, deleteTransaction } = useTransaction();
@@ -44,6 +49,16 @@ export default function TransactionList() {
         }
         return format(transactionDate, "yyyy-MM-dd") === format(date.from, "yyyy-MM-dd");
     });
+
+    const calculateRunningBalance = (transactions: Transaction[]): TransactionWithBalance[] => {
+        let balance = 0;
+        return transactions.map((transaction) => {
+            balance += transaction.type === "Income" ? transaction.amount : -transaction.amount;
+            return { ...transaction, runningBalance: balance };
+        });
+    };
+
+    const transactionsWithBalance = currentSpace?.settings?.showRunningBalance ? calculateRunningBalance(filteredTransactions || []) : filteredTransactions;
 
     if (isLoading) {
         return (
@@ -90,11 +105,12 @@ export default function TransactionList() {
                             <TableHead>Note</TableHead>
                             <TableHead className="text-right">Amount</TableHead>
                             <TableHead>Status</TableHead>
+                            {currentSpace?.settings?.showRunningBalance && <TableHead className="text-right">Balance</TableHead>}
                             <TableHead className="w-[50px]"></TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {filteredTransactions.map((transaction) => {
+                        {transactionsWithBalance?.map((transaction) => {
                             const category = currentSpace?.categories.find((c) => c.id === transaction.category);
                             return (
                                 <TableRow key={transaction.id}>
@@ -126,6 +142,14 @@ export default function TransactionList() {
                                     <TableCell>
                                         <Badge variant="outline">{transaction.status}</Badge>
                                     </TableCell>
+                                    {currentSpace?.settings?.showRunningBalance && (
+                                        <TableCell className="text-right font-medium">
+                                            {(transaction as TransactionWithBalance).runningBalance.toLocaleString("en-IN", {
+                                                style: "currency",
+                                                currency: currentSpace?.currency ?? "INR",
+                                            })}
+                                        </TableCell>
+                                    )}
                                     <TableCell>
                                         <Button
                                             variant="ghost"
