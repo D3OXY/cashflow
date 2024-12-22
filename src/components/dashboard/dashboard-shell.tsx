@@ -8,16 +8,18 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { SpaceSwitcher } from "@/components/space/space-switcher";
 import { Separator } from "@/components/ui/separator";
-import { Menu, Settings, LayoutDashboard, LogOut } from "lucide-react";
+import { Menu, Settings, LayoutDashboard, LogOut, Moon, Sun } from "lucide-react";
 import { useAuth } from "@/context/auth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Link from "next/link";
 import { appStore } from "@/lib/tauri-store";
+import { useTheme } from "next-themes";
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
     const { user, signOut } = useAuth();
     const [sidebarOpen, setSidebarOpen] = React.useState(false);
+    const { theme, setTheme } = useTheme();
 
     // Load initial sidebar state
     React.useEffect(() => {
@@ -37,13 +39,22 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         await appStore.set("ui-state", { sidebarOpen: newState });
     };
 
+    const toggleTheme = () => {
+        setTheme(theme === "dark" ? "light" : "dark");
+    };
+
     return (
         <div className="h-screen w-full flex">
             <aside className={cn("flex flex-col h-screen border-r bg-sidebar-background transition-all duration-300 ease-in-out", sidebarOpen ? "w-64" : "w-14")}>
-                <div className="h-14 border-b flex items-center justify-center">
+                <div className="h-14 border-b flex items-center justify-center px-2">
                     <Button variant="ghost" size="icon" onClick={toggleSidebar} className="text-sidebar-foreground">
                         <Menu className="h-5 w-5" />
                     </Button>
+                    {sidebarOpen && (
+                        <Button variant="ghost" size="icon" onClick={toggleTheme} className="text-sidebar-foreground ml-auto">
+                            {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+                        </Button>
+                    )}
                 </div>
                 <div className={cn("h-14 border-b transition-all", !sidebarOpen && "hidden")}>
                     <SpaceSwitcher />
