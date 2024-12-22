@@ -205,7 +205,21 @@ export function TransactionForm({ transaction, onSuccess }: TransactionFormProps
                         <FormItem>
                             <FormLabel>Amount</FormLabel>
                             <FormControl>
-                                <Input type="number" step="0.01" min="0" placeholder="Enter amount" {...field} onChange={(e) => field.onChange(parseFloat(e.target.value))} />
+                                <Input
+                                    type="number"
+                                    step="0.01"
+                                    min="0"
+                                    placeholder="Enter amount"
+                                    {...field}
+                                    onChange={(e) => {
+                                        const value = e.target.value;
+                                        // Only update if it's a valid number or empty
+                                        if (value === "" || !isNaN(parseFloat(value))) {
+                                            field.onChange(value === "" ? 0 : parseFloat(value));
+                                        }
+                                    }}
+                                    value={field.value === 0 ? "" : field.value}
+                                />
                             </FormControl>
                             <FormMessage />
                         </FormItem>
