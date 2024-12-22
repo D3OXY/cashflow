@@ -17,6 +17,7 @@ export interface Space {
     createdAt: string;
     updatedAt: string;
     userId: string;
+    settings?: SpaceSettings;
 }
 
 export interface SpaceSettings {
