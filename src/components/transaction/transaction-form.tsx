@@ -147,15 +147,34 @@ export function TransactionForm({ transaction, onSuccess }: TransactionFormProps
                             <Select onValueChange={field.onChange} defaultValue={field.value}>
                                 <FormControl>
                                     <SelectTrigger>
-                                        <SelectValue placeholder="Select category" />
+                                        <SelectValue>
+                                            {currentSpace?.categories.find((c) => c.id === field.value) && (
+                                                <div className="flex items-center gap-2">
+                                                    <div
+                                                        className="flex h-4 w-4 items-center justify-center rounded-full"
+                                                        style={{ backgroundColor: currentSpace?.categories.find((c) => c.id === field.value)?.color }}
+                                                    >
+                                                        <span className="text-[10px]">{currentSpace?.categories.find((c) => c.id === field.value)?.icon}</span>
+                                                    </div>
+                                                    <span>{currentSpace?.categories.find((c) => c.id === field.value)?.name}</span>
+                                                </div>
+                                            )}
+                                        </SelectValue>
                                     </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
-                                    {currentSpace?.categories.map((category) => (
-                                        <SelectItem key={category.id} value={category.id}>
-                                            {category.name}
-                                        </SelectItem>
-                                    ))}
+                                    {currentSpace?.categories
+                                        .filter((category) => category.type === form.watch("type") || category.type === "Both")
+                                        .map((category) => (
+                                            <SelectItem key={category.id} value={category.id}>
+                                                <div className="flex items-center gap-2">
+                                                    <div className="flex h-4 w-4 items-center justify-center rounded-full" style={{ backgroundColor: category.color }}>
+                                                        <span className="text-[10px]">{category.icon}</span>
+                                                    </div>
+                                                    <span>{category.name}</span>
+                                                </div>
+                                            </SelectItem>
+                                        ))}
                                 </SelectContent>
                             </Select>
                             <FormMessage />
