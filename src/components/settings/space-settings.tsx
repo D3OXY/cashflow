@@ -144,9 +144,9 @@ export function SpaceSettings({ space }: SpaceSettingsProps) {
             // Get remaining spaces
             const remainingSpaces = await getUserSpaces();
 
-            // If no spaces left, redirect to onboarding
+            // If no spaces left, show create space dialog
             if (remainingSpaces.length === 0) {
-                router.push("/onboarding");
+                router.push("/dashboard");
             } else {
                 // If there are spaces, redirect to the first available space
                 router.push(`/dashboard?spaceId=${remainingSpaces[0].id}`);

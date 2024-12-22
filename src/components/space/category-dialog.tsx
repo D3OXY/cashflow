@@ -9,6 +9,7 @@ import { addCategory, deleteCategory } from "@/lib/firebase/spaces";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { CATEGORY_ICONS } from "@/lib/constants";
 import type { Category } from "@/lib/types/space";
 
 export function CategoryDialog() {
@@ -17,6 +18,8 @@ export function CategoryDialog() {
     const [newCategory, setNewCategory] = useState<Omit<Category, "id">>({
         name: "",
         type: "Expense",
+        icon: "📦",
+        color: "#6b7280",
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -30,7 +33,7 @@ export function CategoryDialog() {
         try {
             setIsSubmitting(true);
             await addCategory(currentSpace.id, newCategory);
-            setNewCategory({ name: "", type: "Expense" });
+            setNewCategory({ name: "", type: "Expense", icon: "📦", color: "#6b7280" });
             toast.success("Category added successfully");
         } catch (error) {
             console.error("Failed to add category:", error);
@@ -67,31 +70,49 @@ export function CategoryDialog() {
                 </DialogHeader>
 
                 <div className="space-y-4">
-                    <div className="flex items-end gap-2">
-                        <div className="flex-1 space-y-2">
+                    <div className="grid gap-2">
+                        <div className="grid grid-cols-[1fr_auto_auto] gap-2">
                             <Input placeholder="Category name" value={newCategory.name} onChange={(e) => setNewCategory((prev) => ({ ...prev, name: e.target.value }))} />
+                            <Select value={newCategory.type} onValueChange={(value) => setNewCategory((prev) => ({ ...prev, type: value as Category["type"] }))}>
+                                <SelectTrigger className="w-[120px]">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="Income">Income</SelectItem>
+                                    <SelectItem value="Expense">Expense</SelectItem>
+                                    <SelectItem value="Both">Both</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <Select value={newCategory.icon} onValueChange={(value) => setNewCategory((prev) => ({ ...prev, icon: value }))}>
+                                <SelectTrigger className="w-[60px]">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {CATEGORY_ICONS.map((icon) => (
+                                        <SelectItem key={icon.value} value={icon.value}>
+                                            <span className="flex items-center">
+                                                <span className="mr-2">{icon.value}</span>
+                                                {icon.label}
+                                            </span>
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
                         </div>
-                        <Select value={newCategory.type} onValueChange={(value) => setNewCategory((prev) => ({ ...prev, type: value as Category["type"] }))}>
-                            <SelectTrigger className="w-[120px]">
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="Income">Income</SelectItem>
-                                <SelectItem value="Expense">Expense</SelectItem>
-                                <SelectItem value="Both">Both</SelectItem>
-                            </SelectContent>
-                        </Select>
                         <Button onClick={handleAddCategory} disabled={isSubmitting}>
-                            Add
+                            Add Category
                         </Button>
                     </div>
 
                     <div className="space-y-2">
                         {currentSpace?.categories.map((category) => (
                             <div key={category.id} className="flex items-center justify-between p-2 rounded-md border">
-                                <div>
-                                    <p className="font-medium">{category.name}</p>
-                                    <p className="text-sm text-muted-foreground">{category.type}</p>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-xl">{category.icon}</span>
+                                    <div>
+                                        <p className="font-medium">{category.name}</p>
+                                        <p className="text-sm text-muted-foreground">{category.type}</p>
+                                    </div>
                                 </div>
                                 <Button
                                     variant="ghost"

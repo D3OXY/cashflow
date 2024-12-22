@@ -1,19 +1,58 @@
 export const SPACE_ICONS = [
-    { value: "💰", label: "Money" },
-    { value: "🏠", label: "Home" },
-    { value: "💼", label: "Work" },
-    { value: "🎓", label: "Education" },
-    { value: "🏢", label: "Business" },
-    { value: "🛒", label: "Shopping" },
-    { value: "✈️", label: "Travel" },
-    { value: "🎮", label: "Entertainment" },
-    { value: "🏋️", label: "Fitness" },
-    { value: "🎨", label: "Art" },
-    { value: "🌟", label: "Personal" },
-    { value: "🔧", label: "Tools" },
+    { label: "Money", value: "💰" },
+    { label: "Bank", value: "🏦" },
+    { label: "Home", value: "🏠" },
+    { label: "Work", value: "💼" },
+    { label: "Family", value: "👨‍👩‍👧‍👦" },
+    { label: "Personal", value: "👤" },
+    { label: "Travel", value: "✈️" },
+    { label: "Shopping", value: "🛍️" },
 ] as const;
 
-export type SpaceIcon = (typeof SPACE_ICONS)[number]["value"];
+export const CATEGORY_ICONS = [
+    // Income
+    { label: "Salary", value: "💰" },
+    { label: "Investment", value: "📈" },
+    { label: "Gift", value: "🎁" },
+    { label: "Business", value: "💼" },
+    { label: "Rental", value: "🏠" },
+    { label: "Savings", value: "🏦" },
+    { label: "Refund", value: "💸" },
+    { label: "Other Income", value: "💵" },
+
+    // Expense
+    { label: "Food", value: "🍽️" },
+    { label: "Transport", value: "🚗" },
+    { label: "Shopping", value: "🛍️" },
+    { label: "Bills", value: "📝" },
+    { label: "Entertainment", value: "🎮" },
+    { label: "Health", value: "🏥" },
+    { label: "Education", value: "📚" },
+    { label: "Travel", value: "✈️" },
+    { label: "Groceries", value: "🛒" },
+    { label: "Housing", value: "🏘️" },
+    { label: "Insurance", value: "🛡️" },
+    { label: "Clothing", value: "👕" },
+    { label: "Beauty", value: "💅" },
+    { label: "Gifts", value: "🎁" },
+    { label: "Sports", value: "⚽" },
+    { label: "Other", value: "📦" },
+] as const;
+
+export const DEFAULT_CATEGORIES = [
+    { id: "1", name: "Salary", type: "Income", icon: "💰", color: "#22c55e" },
+    { id: "2", name: "Investment", type: "Income", icon: "📈", color: "#10b981" },
+    { id: "3", name: "Gift", type: "Income", icon: "🎁", color: "#06b6d4" },
+    { id: "4", name: "Food", type: "Expense", icon: "🍽️", color: "#ef4444" },
+    { id: "5", name: "Transport", type: "Expense", icon: "🚗", color: "#3b82f6" },
+    { id: "6", name: "Shopping", type: "Expense", icon: "🛍️", color: "#f59e0b" },
+    { id: "7", name: "Bills", type: "Expense", icon: "📝", color: "#8b5cf6" },
+    { id: "8", name: "Entertainment", type: "Expense", icon: "🎮", color: "#ec4899" },
+    { id: "9", name: "Health", type: "Expense", icon: "🏥", color: "#06b6d4" },
+    { id: "10", name: "Education", type: "Expense", icon: "📚", color: "#6366f1" },
+    { id: "11", name: "Travel", type: "Expense", icon: "✈️", color: "#14b8a6" },
+    { id: "12", name: "Other", type: "Both", icon: "📦", color: "#6b7280" },
+] as const;
 
 export const PROFILE_IMAGES = [
     {

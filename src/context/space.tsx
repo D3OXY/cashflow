@@ -7,6 +7,7 @@ import { getDb } from "@/lib/firebase/config";
 import type { Space } from "@/lib/types/space";
 import type { CreateSpaceData } from "@/lib/firebase/spaces";
 import { createSpaceInDb } from "@/lib/firebase/spaces";
+import { useRouter } from "next/navigation";
 
 interface SpaceContextType {
     spaces: Space[];
@@ -16,16 +17,20 @@ interface SpaceContextType {
     switchSpace: (spaceId: string) => void;
     createNewSpace: (data: CreateSpaceData) => Promise<Space>;
     refreshSpaces: () => Promise<void>;
+    showCreateSpace: boolean;
+    setShowCreateSpace: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 const SpaceContext = createContext<SpaceContextType | null>(null);
 
 export function SpaceProvider({ children }: { children: React.ReactNode }) {
+    const router = useRouter();
     const { user } = useAuth();
     const [spaces, setSpaces] = useState<Space[]>([]);
     const [currentSpaceId, setCurrentSpaceId] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<Error | null>(null);
+    const [showCreateSpace, setShowCreateSpace] = useState(false);
 
     // Derive currentSpace from spaces and currentSpaceId
     const currentSpace = currentSpaceId ? spaces.find((s) => s.id === currentSpaceId) || null : spaces[0] || null;
@@ -64,6 +69,9 @@ export function SpaceProvider({ children }: { children: React.ReactNode }) {
                     setCurrentSpaceId(updatedSpaces.length > 0 ? updatedSpaces[0].id : null);
                 }
 
+                // Show create space dialog if no spaces exist
+                setShowCreateSpace(updatedSpaces.length === 0);
+
                 setIsLoading(false);
                 setError(null);
             },
@@ -79,11 +87,13 @@ export function SpaceProvider({ children }: { children: React.ReactNode }) {
 
     const switchSpace = (spaceId: string) => {
         setCurrentSpaceId(spaceId);
+        router.push(`/dashboard?spaceId=${spaceId}`);
     };
 
     const createNewSpace = async (data: CreateSpaceData) => {
         if (!user) throw new Error("No user logged in");
         const newSpace = await createSpaceInDb(data, user.uid);
+        setShowCreateSpace(false);
         return newSpace;
     };
 
@@ -102,6 +112,8 @@ export function SpaceProvider({ children }: { children: React.ReactNode }) {
                 switchSpace,
                 createNewSpace,
                 refreshSpaces,
+                showCreateSpace,
+                setShowCreateSpace,
             }}
         >
             {children}

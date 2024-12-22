@@ -13,20 +13,15 @@ import Link from "next/link";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useUser } from "@/context/user";
 import { useRouter } from "next/navigation";
+import { SpaceOnboarding } from "@/components/space/space-onboarding";
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {
     const router = useRouter();
     const { signOut } = useAuth();
     const { userData } = useUser();
-    const { spaces, currentSpace } = useSpace();
+    const { spaces, currentSpace, showCreateSpace } = useSpace();
 
     useEffect(() => {
-        // If there are no spaces, redirect to onboarding
-        if (spaces && spaces.length === 0) {
-            router.push("/onboarding");
-            return;
-        }
-
         // If there are spaces but no current space selected, redirect to the first space
         if (spaces && spaces.length > 0 && !currentSpace) {
             router.push(`/dashboard?spaceId=${spaces[0].id}`);
@@ -35,8 +30,13 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
     }, [spaces, currentSpace, router]);
 
     // Show nothing while redirecting
-    if (!spaces || spaces.length === 0 || !currentSpace) {
+    if (!spaces) {
         return null;
+    }
+
+    // Show space creation dialog if no spaces exist
+    if (showCreateSpace) {
+        return <SpaceOnboarding />;
     }
 
     const handleSignOut = async () => {

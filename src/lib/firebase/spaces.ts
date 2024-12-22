@@ -2,6 +2,7 @@ import { collection, doc, getDoc, getDocs, query, setDoc, where, deleteDoc, upda
 import { getDb } from "./config";
 import { getAuth } from "firebase/auth";
 import type { Space, Category } from "../types/space";
+import { DEFAULT_CATEGORIES } from "@/lib/constants";
 
 const SPACES_COLLECTION = "spaces";
 
@@ -193,14 +194,5 @@ export async function updateCategory(spaceId: string, categoryId: string, data: 
 }
 
 function getDefaultCategories(): Category[] {
-    return [
-        { id: "1", name: "Salary", type: "Income", color: "#22c55e" },
-        { id: "2", name: "Food", type: "Expense", color: "#ef4444" },
-        { id: "3", name: "Transport", type: "Expense", color: "#3b82f6" },
-        { id: "4", name: "Shopping", type: "Expense", color: "#f59e0b" },
-        { id: "5", name: "Bills", type: "Expense", color: "#8b5cf6" },
-        { id: "6", name: "Entertainment", type: "Expense", color: "#ec4899" },
-        { id: "7", name: "Investment", type: "Both", color: "#10b981" },
-        { id: "8", name: "Others", type: "Both", color: "#6b7280" },
-    ];
+    return [...DEFAULT_CATEGORIES];
 }
