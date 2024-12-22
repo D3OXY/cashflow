@@ -15,6 +15,8 @@ import { updateProfile } from "firebase/auth";
 import { doc, updateDoc, setDoc, getDoc } from "firebase/firestore";
 import { getDb } from "@/lib/firebase/config";
 import { Loader2 } from "lucide-react";
+import { PROFILE_IMAGES } from "@/lib/constants";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 const CURRENCIES = {
     USD: "US Dollar",
@@ -27,20 +29,7 @@ export function UserSettings() {
     const { user } = useAuth();
     const [isUpdating, setIsUpdating] = useState(false);
     const [displayName, setDisplayName] = useState(user?.displayName || "");
-    const [photoFile, setPhotoFile] = useState<File | null>(null);
-    const [photoPreview, setPhotoPreview] = useState<string | null>(user?.photoURL || null);
-
-    const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file) {
-            setPhotoFile(file);
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setPhotoPreview(reader.result as string);
-            };
-            reader.readAsDataURL(file);
-        }
-    };
+    const [selectedAvatar, setSelectedAvatar] = useState<string>(user?.photoURL || PROFILE_IMAGES[0].url);
 
     const handleProfileUpdate = async () => {
         if (!user) return;
@@ -53,31 +42,30 @@ export function UserSettings() {
                 await updateProfile(user, { displayName });
             }
 
-            // Update photo URL (in a real app, you'd upload to storage first)
-            if (photoFile) {
-                // TODO: Implement file upload to Firebase Storage
-                // For now, we'll just update the profile without the photo
-                // await updateProfile(user, { photoURL: uploadedPhotoUrl });
+            // Update photo URL in Firebase Auth if changed
+            if (selectedAvatar !== user.photoURL) {
+                await updateProfile(user, { photoURL: selectedAvatar });
             }
 
             // Check if user document exists
             const userDoc = doc(getDb(), "users", user.uid);
             const userSnap = await getDoc(userDoc);
 
+            const userData = {
+                displayName,
+                email: user.email,
+                photoURL: selectedAvatar,
+                updatedAt: new Date().toISOString(),
+            };
+
             if (userSnap.exists()) {
                 // Update existing document
-                await updateDoc(userDoc, {
-                    displayName,
-                    email: user.email,
-                    updatedAt: new Date().toISOString(),
-                });
+                await updateDoc(userDoc, userData);
             } else {
                 // Create new document
                 await setDoc(userDoc, {
-                    displayName,
-                    email: user.email,
+                    ...userData,
                     createdAt: new Date().toISOString(),
-                    updatedAt: new Date().toISOString(),
                 });
             }
 
@@ -97,16 +85,26 @@ export function UserSettings() {
                     <CardTitle>Profile</CardTitle>
                     <CardDescription>Update your personal information.</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                    <div className="flex items-center gap-4">
-                        <Avatar className="h-20 w-20">
-                            <AvatarImage src={photoPreview || undefined} />
-                            <AvatarFallback className="text-lg">{user?.email?.slice(0, 2).toUpperCase() || "??"}</AvatarFallback>
-                        </Avatar>
-                        <div className="space-y-2">
-                            <Label htmlFor="photo">Profile Photo</Label>
-                            <Input id="photo" type="file" accept="image/*" onChange={handlePhotoChange} />
-                        </div>
+                <CardContent className="space-y-6">
+                    <div className="space-y-4">
+                        <Label>Profile Picture</Label>
+                        <RadioGroup value={selectedAvatar} onValueChange={setSelectedAvatar} className="grid grid-cols-4 gap-4">
+                            {PROFILE_IMAGES.map((avatar) => (
+                                <div key={avatar.id}>
+                                    <RadioGroupItem value={avatar.url} id={avatar.id} className="peer sr-only" />
+                                    <Label
+                                        htmlFor={avatar.id}
+                                        className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-transparent p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
+                                    >
+                                        <Avatar className="h-12 w-12">
+                                            <AvatarImage src={avatar.url} />
+                                            <AvatarFallback>??</AvatarFallback>
+                                        </Avatar>
+                                        <span className="mt-2 text-xs">{avatar.label}</span>
+                                    </Label>
+                                </div>
+                            ))}
+                        </RadioGroup>
                     </div>
 
                     <div className="space-y-2">
