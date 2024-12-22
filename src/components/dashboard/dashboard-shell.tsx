@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { SidebarProvider, Sidebar, SidebarContent, SidebarHeader, SidebarTrigger, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from "@/components/ui/sidebar";
 import { useAuth } from "@/context/auth";
 import { useSpace } from "@/context/space";
@@ -11,11 +12,32 @@ import { toast } from "sonner";
 import Link from "next/link";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useUser } from "@/context/user";
+import { useRouter } from "next/navigation";
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {
+    const router = useRouter();
     const { signOut } = useAuth();
     const { userData } = useUser();
-    const { currentSpace } = useSpace();
+    const { spaces, currentSpace } = useSpace();
+
+    useEffect(() => {
+        // If there are no spaces, redirect to onboarding
+        if (spaces && spaces.length === 0) {
+            router.push("/onboarding");
+            return;
+        }
+
+        // If there are spaces but no current space selected, redirect to the first space
+        if (spaces && spaces.length > 0 && !currentSpace) {
+            router.push(`/dashboard?spaceId=${spaces[0].id}`);
+            return;
+        }
+    }, [spaces, currentSpace, router]);
+
+    // Show nothing while redirecting
+    if (!spaces || spaces.length === 0 || !currentSpace) {
+        return null;
+    }
 
     const handleSignOut = async () => {
         try {

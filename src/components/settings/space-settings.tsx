@@ -18,6 +18,7 @@ import { SPACE_ICONS } from "@/lib/constants";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { deleteSpace } from "@/lib/firebase/spaces";
 import { useRouter } from "next/navigation";
+import { getUserSpaces } from "@/lib/firebase/spaces";
 
 interface SpaceSettingsProps {
     space: Space;
@@ -139,7 +140,17 @@ export function SpaceSettings({ space }: SpaceSettingsProps) {
             await deleteSpace(space.id);
             toast.success("Space deleted successfully");
             setShowDeleteDialog(false);
-            router.push("/dashboard");
+
+            // Get remaining spaces
+            const remainingSpaces = await getUserSpaces();
+
+            // If no spaces left, redirect to onboarding
+            if (remainingSpaces.length === 0) {
+                router.push("/onboarding");
+            } else {
+                // If there are spaces, redirect to the first available space
+                router.push(`/dashboard?spaceId=${remainingSpaces[0].id}`);
+            }
         } catch (error) {
             console.error("Failed to delete space:", error);
             toast.error("Failed to delete space");
