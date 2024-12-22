@@ -19,6 +19,23 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { deleteSpace } from "@/lib/firebase/spaces";
 import { useRouter } from "next/navigation";
 import { getUserSpaces } from "@/lib/firebase/spaces";
+import { Plus, Pencil, MoreVertical } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { CATEGORY_ICONS } from "@/lib/constants";
+import { addCategory, deleteCategory, updateCategory } from "@/lib/firebase/spaces";
+import type { Category } from "@/lib/types/space";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+
+const categorySchema = z.object({
+    name: z.string().min(1, "Name is required"),
+    icon: z.string().min(1, "Icon is required"),
+    type: z.enum(["Income", "Expense", "Both"]).default("Expense"),
+});
+
+type CategoryFormData = z.infer<typeof categorySchema>;
 
 interface SpaceSettingsProps {
     space: Space;
@@ -58,6 +75,10 @@ export function SpaceSettings({ space }: SpaceSettingsProps) {
     const { refreshSpaces } = useSpace();
     const [isUpdating, setIsUpdating] = useState<Record<string, boolean>>({});
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+    const [showNewCategoryDialog, setShowNewCategoryDialog] = useState(false);
+    const [showEditCategoryDialog, setShowEditCategoryDialog] = useState(false);
+    const [showDeleteCategoryDialog, setShowDeleteCategoryDialog] = useState(false);
+    const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
     const [spaceName, setSpaceName] = useState(space.name);
     const [spaceIcon, setSpaceIcon] = useState(space.icon);
@@ -156,6 +177,82 @@ export function SpaceSettings({ space }: SpaceSettingsProps) {
             toast.error("Failed to delete space");
         } finally {
             setIsDeleting(false);
+        }
+    };
+
+    const newCategoryForm = useForm<CategoryFormData>({
+        resolver: zodResolver(categorySchema),
+        defaultValues: {
+            name: "",
+            icon: "",
+            type: "Expense",
+        },
+    });
+
+    const editCategoryForm = useForm<CategoryFormData>({
+        resolver: zodResolver(categorySchema),
+        defaultValues: {
+            name: selectedCategory?.name ?? "",
+            icon: selectedCategory?.icon ?? "",
+            type: selectedCategory?.type ?? "Expense",
+        },
+    });
+
+    useEffect(() => {
+        if (selectedCategory) {
+            editCategoryForm.reset({
+                name: selectedCategory.name,
+                icon: selectedCategory.icon,
+                type: selectedCategory.type,
+            });
+        }
+    }, [selectedCategory, editCategoryForm]);
+
+    const handleAddCategory = async (values: CategoryFormData) => {
+        try {
+            setIsUpdating((prev) => ({ ...prev, newCategory: true }));
+            await addCategory(space.id, values);
+            await refreshSpaces();
+            toast.success("Category added successfully");
+            setShowNewCategoryDialog(false);
+            newCategoryForm.reset();
+        } catch (error) {
+            console.error("Failed to add category:", error);
+            toast.error("Failed to add category");
+        } finally {
+            setIsUpdating((prev) => ({ ...prev, newCategory: false }));
+        }
+    };
+
+    const handleEditCategory = async (values: CategoryFormData) => {
+        if (!selectedCategory) return;
+        try {
+            setIsUpdating((prev) => ({ ...prev, editCategory: true }));
+            await updateCategory(space.id, selectedCategory.id, values);
+            await refreshSpaces();
+            toast.success("Category updated successfully");
+            setShowEditCategoryDialog(false);
+        } catch (error) {
+            console.error("Failed to update category:", error);
+            toast.error("Failed to update category");
+        } finally {
+            setIsUpdating((prev) => ({ ...prev, editCategory: false }));
+        }
+    };
+
+    const handleDeleteCategory = async () => {
+        if (!selectedCategory) return;
+        try {
+            setIsUpdating((prev) => ({ ...prev, deleteCategory: true }));
+            await deleteCategory(space.id, selectedCategory.id);
+            await refreshSpaces();
+            toast.success("Category deleted successfully");
+            setShowDeleteCategoryDialog(false);
+        } catch (error) {
+            console.error("Failed to delete category:", error);
+            toast.error("Failed to delete category");
+        } finally {
+            setIsUpdating((prev) => ({ ...prev, deleteCategory: false }));
         }
     };
 
@@ -355,6 +452,61 @@ export function SpaceSettings({ space }: SpaceSettingsProps) {
 
                 <Card>
                     <CardHeader>
+                        <div className="flex items-center justify-between">
+                            <CardTitle>Categories</CardTitle>
+                            <Button variant="outline" size="sm" onClick={() => setShowNewCategoryDialog(true)}>
+                                <Plus className="h-4 w-4 mr-2" />
+                                Add Category
+                            </Button>
+                        </div>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {space.categories?.map((category) => (
+                                <div key={category.id} className="flex items-center justify-between p-3 border rounded-lg">
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-xl">{category.icon}</span>
+                                        <div className="flex flex-col">
+                                            <span className="font-medium">{category.name}</span>
+                                            <span className="text-xs text-muted-foreground">{category.type}</span>
+                                        </div>
+                                    </div>
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button variant="ghost" size="icon">
+                                                <MoreVertical className="h-4 w-4" />
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end">
+                                            <DropdownMenuItem
+                                                onClick={() => {
+                                                    setSelectedCategory(category);
+                                                    setShowEditCategoryDialog(true);
+                                                }}
+                                            >
+                                                <Pencil className="h-4 w-4 mr-2" />
+                                                Edit
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem
+                                                className="text-destructive"
+                                                onClick={() => {
+                                                    setSelectedCategory(category);
+                                                    setShowDeleteCategoryDialog(true);
+                                                }}
+                                            >
+                                                <Trash2 className="h-4 w-4 mr-2" />
+                                                Delete
+                                            </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                </div>
+                            ))}
+                        </div>
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardHeader>
                         <CardTitle>Danger Zone</CardTitle>
                         <CardDescription>Irreversible and destructive actions.</CardDescription>
                     </CardHeader>
@@ -405,6 +557,192 @@ export function SpaceSettings({ space }: SpaceSettingsProps) {
                             )}
                         </Button>
                     </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={showNewCategoryDialog} onOpenChange={setShowNewCategoryDialog}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Add Category</DialogTitle>
+                        <DialogDescription>Create a new category for your transactions.</DialogDescription>
+                    </DialogHeader>
+                    <Form {...newCategoryForm}>
+                        <form onSubmit={newCategoryForm.handleSubmit(handleAddCategory)} className="space-y-4">
+                            <FormField
+                                control={newCategoryForm.control}
+                                name="name"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Name</FormLabel>
+                                        <FormControl>
+                                            <Input {...field} placeholder="e.g. Groceries" />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={newCategoryForm.control}
+                                name="icon"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Icon</FormLabel>
+                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                            <FormControl>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Select an icon" />
+                                                </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent>
+                                                {CATEGORY_ICONS.map((icon) => (
+                                                    <SelectItem key={icon.value} value={icon.value}>
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-xl">{icon.value}</span>
+                                                            <span>{icon.label}</span>
+                                                        </div>
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={newCategoryForm.control}
+                                name="type"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Type</FormLabel>
+                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                            <FormControl>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Select a type" />
+                                                </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent>
+                                                <SelectItem value="Income">Income</SelectItem>
+                                                <SelectItem value="Expense">Expense</SelectItem>
+                                                <SelectItem value="Both">Both</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <div className="flex justify-end gap-4">
+                                <Button type="button" variant="outline" onClick={() => setShowNewCategoryDialog(false)}>
+                                    Cancel
+                                </Button>
+                                <Button type="submit" disabled={isUpdating.newCategory}>
+                                    {isUpdating.newCategory && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                    Add Category
+                                </Button>
+                            </div>
+                        </form>
+                    </Form>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={showEditCategoryDialog} onOpenChange={setShowEditCategoryDialog}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Edit Category</DialogTitle>
+                        <DialogDescription>Update the category details.</DialogDescription>
+                    </DialogHeader>
+                    <Form {...editCategoryForm}>
+                        <form onSubmit={editCategoryForm.handleSubmit(handleEditCategory)} className="space-y-4">
+                            <FormField
+                                control={editCategoryForm.control}
+                                name="name"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Name</FormLabel>
+                                        <FormControl>
+                                            <Input {...field} placeholder="e.g. Groceries" />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={editCategoryForm.control}
+                                name="icon"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Icon</FormLabel>
+                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                            <FormControl>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Select an icon" />
+                                                </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent>
+                                                {CATEGORY_ICONS.map((icon) => (
+                                                    <SelectItem key={icon.value} value={icon.value}>
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-xl">{icon.value}</span>
+                                                            <span>{icon.label}</span>
+                                                        </div>
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={editCategoryForm.control}
+                                name="type"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Type</FormLabel>
+                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                            <FormControl>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Select a type" />
+                                                </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent>
+                                                <SelectItem value="Income">Income</SelectItem>
+                                                <SelectItem value="Expense">Expense</SelectItem>
+                                                <SelectItem value="Both">Both</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <div className="flex justify-end gap-4">
+                                <Button type="button" variant="outline" onClick={() => setShowEditCategoryDialog(false)}>
+                                    Cancel
+                                </Button>
+                                <Button type="submit" disabled={isUpdating.editCategory}>
+                                    {isUpdating.editCategory && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                    Save Changes
+                                </Button>
+                            </div>
+                        </form>
+                    </Form>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={showDeleteCategoryDialog} onOpenChange={setShowDeleteCategoryDialog}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Delete Category</DialogTitle>
+                        <DialogDescription>Are you sure you want to delete this category? This action cannot be undone.</DialogDescription>
+                    </DialogHeader>
+                    <div className="flex justify-end gap-4">
+                        <Button variant="outline" onClick={() => setShowDeleteCategoryDialog(false)}>
+                            Cancel
+                        </Button>
+                        <Button variant="destructive" disabled={isUpdating.deleteCategory} onClick={handleDeleteCategory}>
+                            {isUpdating.deleteCategory && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            Delete Category
+                        </Button>
+                    </div>
                 </DialogContent>
             </Dialog>
         </>
