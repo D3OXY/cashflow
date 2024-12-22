@@ -28,8 +28,8 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
     return (
         <SidebarProvider defaultOpen>
-            <div className="flex min-h-screen">
-                <Sidebar className="border-r">
+            <div className="flex min-h-screen w-full">
+                <Sidebar className="border-r shrink-0">
                     <SidebarHeader className="border-b border-border px-4 py-2">
                         <div className="flex items-center gap-2">
                             <Avatar>
@@ -81,8 +81,8 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                     </SidebarFooter>
                 </Sidebar>
 
-                <div className="flex-1">
-                    <header className="border-b border-border">
+                <div className="flex-1 w-0 min-w-0">
+                    <header className="sticky top-0 z-10 bg-background border-b border-border">
                         <div className="flex h-16 items-center gap-4 px-6">
                             <SidebarTrigger>
                                 <Button variant="ghost" size="icon">
@@ -95,7 +95,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                             </div>
                         </div>
                     </header>
-                    <main className="p-6">{children}</main>
+                    <main className="container mx-auto p-6">{children}</main>
                 </div>
             </div>
         </SidebarProvider>
