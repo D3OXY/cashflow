@@ -1,104 +1,98 @@
 "use client";
 
-import { createContext, useContext, useCallback } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { createContext, useContext, useEffect, useState } from "react";
+import { collection, onSnapshot, query, where, orderBy } from "firebase/firestore";
+import { getDb } from "@/lib/firebase/config";
+import { createTransaction, deleteTransaction as deleteTransactionFromDb, updateTransaction as updateTransactionFromDb } from "@/lib/firebase/transactions";
 import type { Transaction, CreateTransactionData } from "@/lib/types/transaction";
-import { createTransaction, getSpaceTransactions, updateTransaction, deleteTransaction } from "@/lib/firebase/transactions";
 import { useSpace } from "./space";
-import { toast } from "sonner";
 
 interface TransactionContextType {
-    transactions: Transaction[] | undefined;
+    transactions: Transaction[];
     isLoading: boolean;
     error: Error | null;
-    createTransaction: (data: CreateTransactionData) => Promise<Transaction>;
+    createTransaction: (data: CreateTransactionData) => Promise<void>;
     updateTransaction: (id: string, data: Partial<Transaction>) => Promise<void>;
     deleteTransaction: (id: string) => Promise<void>;
 }
 
-const TransactionContext = createContext<TransactionContextType | undefined>(undefined);
+const TransactionContext = createContext<TransactionContextType | null>(null);
 
 export function TransactionProvider({ children }: { children: React.ReactNode }) {
-    const queryClient = useQueryClient();
+    const [transactions, setTransactions] = useState<Transaction[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<Error | null>(null);
     const { currentSpace } = useSpace();
 
-    // Fetch transactions for current space
-    const {
-        data: transactions,
-        isLoading,
-        error,
-    } = useQuery({
-        queryKey: ["transactions", currentSpace?.id],
-        queryFn: () => (currentSpace ? getSpaceTransactions(currentSpace.id) : Promise.resolve([])),
-        enabled: !!currentSpace,
-    });
+    useEffect(() => {
+        if (!currentSpace) {
+            setTransactions([]);
+            setIsLoading(false);
+            return;
+        }
 
-    // Create transaction mutation
-    const createMutation = useMutation({
-        mutationFn: createTransaction,
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ["transactions", currentSpace?.id] });
-            toast.success("Transaction created successfully");
-        },
-        onError: (error) => {
-            console.error("Failed to create transaction:", error);
-            toast.error("Failed to create transaction");
-        },
-    });
+        setIsLoading(true);
+        setError(null);
 
-    // Update transaction mutation
-    const updateMutation = useMutation({
-        mutationFn: ({ id, data }: { id: string; data: Partial<Transaction> }) => updateTransaction(id, data),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ["transactions", currentSpace?.id] });
-            toast.success("Transaction updated successfully");
-        },
-        onError: (error) => {
-            console.error("Failed to update transaction:", error);
-            toast.error("Failed to update transaction");
-        },
-    });
+        const db = getDb();
+        const q = query(collection(db, "transactions"), where("spaceId", "==", currentSpace.id), orderBy("date", "desc"), orderBy("createdAt", "desc"));
 
-    // Delete transaction mutation
-    const deleteMutation = useMutation({
-        mutationFn: deleteTransaction,
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ["transactions", currentSpace?.id] });
-            toast.success("Transaction deleted successfully");
-        },
-        onError: (error) => {
-            console.error("Failed to delete transaction:", error);
-            toast.error("Failed to delete transaction");
-        },
-    });
+        const unsubscribe = onSnapshot(
+            q,
+            (snapshot) => {
+                const newTransactions = snapshot.docs.map(
+                    (doc) =>
+                        ({
+                            ...doc.data(),
+                            id: doc.id,
+                        } as Transaction)
+                );
+                setTransactions(newTransactions);
+                setIsLoading(false);
+            },
+            (err) => {
+                console.error("Failed to fetch transactions:", err);
+                setError(err as Error);
+                setIsLoading(false);
+            }
+        );
 
-    const handleCreateTransaction = useCallback(
-        async (data: CreateTransactionData) => {
-            return createMutation.mutateAsync(data);
-        },
-        [createMutation]
-    );
+        return () => unsubscribe();
+    }, [currentSpace]);
 
-    const handleUpdateTransaction = useCallback(
-        async (id: string, data: Partial<Transaction>) => {
-            return updateMutation.mutateAsync({ id, data });
-        },
-        [updateMutation]
-    );
+    const handleCreateTransaction = async (data: CreateTransactionData) => {
+        try {
+            await createTransaction(data);
+        } catch (err) {
+            console.error("Failed to create transaction:", err);
+            throw err;
+        }
+    };
 
-    const handleDeleteTransaction = useCallback(
-        async (id: string) => {
-            return deleteMutation.mutateAsync(id);
-        },
-        [deleteMutation]
-    );
+    const handleUpdateTransaction = async (id: string, data: Partial<Transaction>) => {
+        try {
+            await updateTransactionFromDb(id, data);
+        } catch (err) {
+            console.error("Failed to update transaction:", err);
+            throw err;
+        }
+    };
+
+    const handleDeleteTransaction = async (id: string) => {
+        try {
+            await deleteTransactionFromDb(id);
+        } catch (err) {
+            console.error("Failed to delete transaction:", err);
+            throw err;
+        }
+    };
 
     return (
         <TransactionContext.Provider
             value={{
                 transactions,
                 isLoading,
-                error: error as Error | null,
+                error,
                 createTransaction: handleCreateTransaction,
                 updateTransaction: handleUpdateTransaction,
                 deleteTransaction: handleDeleteTransaction,
@@ -111,7 +105,7 @@ export function TransactionProvider({ children }: { children: React.ReactNode })
 
 export function useTransaction() {
     const context = useContext(TransactionContext);
-    if (context === undefined) {
+    if (!context) {
         throw new Error("useTransaction must be used within a TransactionProvider");
     }
     return context;
