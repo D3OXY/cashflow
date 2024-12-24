@@ -191,12 +191,12 @@ export default function AnalyticsPage() {
 
     return (
         <div className="space-y-4">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <h2 className="text-3xl font-bold tracking-tight">Analytics</h2>
-                <DateRangePickerInput className="w-fit" value={date} onChange={setDate} align="end" />
+                <DateRangePickerInput className="w-full sm:w-fit" value={date} onChange={setDate} align="end" />
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">Total Income</CardTitle>
@@ -252,7 +252,7 @@ export default function AnalyticsPage() {
                 </Card>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
                 <Card>
                     <CardHeader>
                         <CardTitle>Daily Overview</CardTitle>
@@ -260,7 +260,7 @@ export default function AnalyticsPage() {
                     <CardContent>
                         <ChartContainer className="h-[300px]" config={chartConfig}>
                             <ResponsiveContainer width="100%" height="100%">
-                                <AreaChart data={dailyData} margin={{ top: 10, right: 10, bottom: 20, left: 40 }}>
+                                <AreaChart data={dailyData} margin={{ top: 10, right: 10, bottom: 10, left: 10 }}>
                                     <defs>
                                         <linearGradient id="income" x1="0" y1="0" x2="0" y2="1">
                                             <stop offset="5%" stopColor={CHART_COLORS.income.light} stopOpacity={0.3} />
@@ -314,7 +314,7 @@ export default function AnalyticsPage() {
                     <CardContent>
                         <ChartContainer className="h-[300px]" config={chartConfig}>
                             <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={categoryBreakdown} margin={{ top: 10, right: 10, bottom: 20, left: 40 }}>
+                                <BarChart data={categoryBreakdown} margin={{ top: 10, right: 10, bottom: 10, left: 10 }}>
                                     <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                                     <XAxis dataKey="name" className="text-xs" angle={-45} textAnchor="end" height={60} />
                                     <YAxis tickFormatter={(value) => formatCurrency(value, currentSpace?.currency)} className="text-xs" />
@@ -352,7 +352,7 @@ export default function AnalyticsPage() {
                 </Card>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
                 <Card>
                     <CardHeader>
                         <CardTitle>Income Distribution</CardTitle>
@@ -410,42 +410,35 @@ export default function AnalyticsPage() {
                 </Card>
             </div>
 
-            <div className="grid gap-4">
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Category Breakdown</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="space-y-4">
-                            <div className="grid grid-cols-4 text-sm font-medium text-muted-foreground">
-                                <div>Category</div>
-                                <div className="text-right">Income</div>
-                                <div className="text-right">Expense</div>
-                                <div className="text-right">Net</div>
-                            </div>
-                            <div className="space-y-2">
-                                {categoryBreakdown.map((category) => (
-                                    <div key={category.name} className="grid grid-cols-4 text-sm items-center">
-                                        <div className="font-medium">{category.name}</div>
-                                        <div className="text-right text-green-600">{formatCurrency(category.income, currentSpace?.currency)}</div>
-                                        <div className="text-right text-red-600">{formatCurrency(category.expense, currentSpace?.currency)}</div>
-                                        <div className={cn("text-right font-medium", category.total >= 0 ? "text-green-600" : "text-red-600")}>
-                                            {formatCurrency(category.total, currentSpace?.currency)}
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                            <div className="border-t pt-2 grid grid-cols-4 text-sm font-medium">
-                                <div>Total</div>
-                                <div className="text-right text-green-600">{formatCurrency(totalIncome, currentSpace?.currency)}</div>
-                                <div className="text-right text-red-600">{formatCurrency(totalExpense, currentSpace?.currency)}</div>
-                                <div className={cn("text-right", totalIncome - totalExpense >= 0 ? "text-green-600" : "text-red-600")}>
-                                    {formatCurrency(totalIncome - totalExpense, currentSpace?.currency)}
+            <div className="overflow-x-auto">
+                <div className="min-w-[600px]">
+                    <div className="grid grid-cols-4 text-sm font-medium text-muted-foreground">
+                        <div>Category</div>
+                        <div className="text-right">Income</div>
+                        <div className="text-right">Expense</div>
+                        <div className="text-right">Net</div>
+                    </div>
+                    <div className="space-y-2">
+                        {categoryBreakdown.map((category) => (
+                            <div key={category.name} className="grid grid-cols-4 text-sm items-center">
+                                <div className="font-medium">{category.name}</div>
+                                <div className="text-right text-green-600">{formatCurrency(category.income, currentSpace?.currency)}</div>
+                                <div className="text-right text-red-600">{formatCurrency(category.expense, currentSpace?.currency)}</div>
+                                <div className={cn("text-right font-medium", category.total >= 0 ? "text-green-600" : "text-red-600")}>
+                                    {formatCurrency(category.total, currentSpace?.currency)}
                                 </div>
                             </div>
+                        ))}
+                    </div>
+                    <div className="border-t pt-2 grid grid-cols-4 text-sm font-medium">
+                        <div>Total</div>
+                        <div className="text-right text-green-600">{formatCurrency(totalIncome, currentSpace?.currency)}</div>
+                        <div className="text-right text-red-600">{formatCurrency(totalExpense, currentSpace?.currency)}</div>
+                        <div className={cn("text-right", totalIncome - totalExpense >= 0 ? "text-green-600" : "text-red-600")}>
+                            {formatCurrency(totalIncome - totalExpense, currentSpace?.currency)}
                         </div>
-                    </CardContent>
-                </Card>
+                    </div>
+                </div>
             </div>
         </div>
     );
