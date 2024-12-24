@@ -409,6 +409,44 @@ export default function AnalyticsPage() {
                     </CardContent>
                 </Card>
             </div>
+
+            <div className="grid gap-4">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Category Breakdown</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="space-y-4">
+                            <div className="grid grid-cols-4 text-sm font-medium text-muted-foreground">
+                                <div>Category</div>
+                                <div className="text-right">Income</div>
+                                <div className="text-right">Expense</div>
+                                <div className="text-right">Net</div>
+                            </div>
+                            <div className="space-y-2">
+                                {categoryBreakdown.map((category) => (
+                                    <div key={category.name} className="grid grid-cols-4 text-sm items-center">
+                                        <div className="font-medium">{category.name}</div>
+                                        <div className="text-right text-green-600">{formatCurrency(category.income, currentSpace?.currency)}</div>
+                                        <div className="text-right text-red-600">{formatCurrency(category.expense, currentSpace?.currency)}</div>
+                                        <div className={cn("text-right font-medium", category.total >= 0 ? "text-green-600" : "text-red-600")}>
+                                            {formatCurrency(category.total, currentSpace?.currency)}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                            <div className="border-t pt-2 grid grid-cols-4 text-sm font-medium">
+                                <div>Total</div>
+                                <div className="text-right text-green-600">{formatCurrency(totalIncome, currentSpace?.currency)}</div>
+                                <div className="text-right text-red-600">{formatCurrency(totalExpense, currentSpace?.currency)}</div>
+                                <div className={cn("text-right", totalIncome - totalExpense >= 0 ? "text-green-600" : "text-red-600")}>
+                                    {formatCurrency(totalIncome - totalExpense, currentSpace?.currency)}
+                                </div>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
         </div>
     );
 }
