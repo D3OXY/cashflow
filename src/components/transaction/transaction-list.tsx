@@ -10,9 +10,9 @@ import { Loader2, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import DateRangePicker from "./date-range-picker";
 import { useState } from "react";
 import type { Transaction } from "@/lib/types/transaction";
+import { DateRangePickerInput } from "@/components/ui/date-range-picker-input";
 
 interface TransactionWithBalance extends Transaction {
     runningBalance: number;
@@ -112,7 +112,7 @@ export default function TransactionList() {
                         <CardTitle>Transactions</CardTitle>
                         <CardDescription>Your recent transactions</CardDescription>
                     </div>
-                    <DateRangePicker date={date} setDate={setDate} />
+                    <DateRangePickerInput className="w-fit" value={date} onChange={setDate} align="end" />
                 </div>
             </CardHeader>
             <CardContent>

@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-import DateRangePicker from "@/components/transaction/date-range-picker";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useTransaction } from "@/context/transaction";
 import { useSpace } from "@/context/space";
@@ -10,6 +9,7 @@ import { Area, AreaChart, Bar, BarChart } from "recharts";
 import { cn, formatCurrency } from "@/lib/utils";
 import { addDays, format, startOfMonth, subMonths } from "date-fns";
 import { Transaction } from "@/lib/types/transaction";
+import { DateRangePickerInput } from "@/components/ui/date-range-picker-input";
 
 export default function AnalyticsPage() {
     const { currentSpace } = useSpace();
@@ -111,7 +111,7 @@ export default function AnalyticsPage() {
         <div className="space-y-4">
             <div className="flex items-center justify-between">
                 <h2 className="text-3xl font-bold tracking-tight">Analytics</h2>
-                <DateRangePicker date={date} setDate={setDate} />
+                <DateRangePickerInput className="w-fit" value={date} onChange={setDate} align="end" />
             </div>
 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
