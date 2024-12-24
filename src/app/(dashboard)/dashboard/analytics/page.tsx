@@ -1,25 +1,50 @@
 "use client";
 
-import * as React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useTransaction } from "@/context/transaction";
-import { useSpace } from "@/context/space";
 import { ChartContainer, ChartTooltip } from "@/components/ui/chart";
-import { Area, AreaChart, Bar, BarChart } from "recharts";
-import { cn, formatCurrency } from "@/lib/utils";
-import { addDays, format, startOfMonth, subMonths } from "date-fns";
-import { Transaction } from "@/lib/types/transaction";
 import { DateRangePickerInput } from "@/components/ui/date-range-picker-input";
+import { useSpace } from "@/context/space";
+import { useTransaction } from "@/context/transaction";
+import { Transaction } from "@/lib/types/transaction";
+import { cn, formatCurrency } from "@/lib/utils";
+import { addDays, endOfDay, endOfMonth, endOfWeek, endOfYear, format, startOfDay, startOfMonth, startOfWeek, startOfYear } from "date-fns";
+import * as React from "react";
+import { useState } from "react";
+import { Area, AreaChart, Bar, BarChart } from "recharts";
 
 export default function AnalyticsPage() {
     const { currentSpace } = useSpace();
     const { transactions } = useTransaction();
-    const [date, setDate] = React.useState<{
+    const [date, setDate] = useState<{
         from: Date;
         to: Date;
-    }>({
-        from: startOfMonth(subMonths(new Date(), 1)),
-        to: new Date(),
+    }>(() => {
+        const today = new Date();
+        const defaultView = currentSpace?.settings?.defaultView || "monthly";
+
+        switch (defaultView) {
+            case "daily":
+                return {
+                    from: startOfDay(today),
+                    to: endOfDay(today),
+                };
+            case "weekly":
+                return {
+                    from: startOfWeek(today, { weekStartsOn: currentSpace?.settings?.startOfWeek || 1 }),
+                    to: endOfWeek(today, { weekStartsOn: currentSpace?.settings?.startOfWeek || 1 }),
+                };
+            case "yearly":
+                return {
+                    from: startOfYear(today),
+                    to: endOfYear(today),
+                };
+            case "monthly":
+            default:
+                return {
+                    from: startOfMonth(today),
+                    to: endOfMonth(today),
+                };
+        }
     });
 
     const filteredTransactions = React.useMemo(() => {
