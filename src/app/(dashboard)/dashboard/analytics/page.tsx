@@ -1,39 +1,36 @@
 "use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ChartConfig, ChartContainer } from "@/components/ui/chart";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { DateRangePickerInput } from "@/components/ui/date-range-picker-input";
+import { Progress } from "@/components/ui/progress";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useSpace } from "@/context/space";
 import { useTransaction } from "@/context/transaction";
 import { Transaction } from "@/lib/types/transaction";
 import { cn, formatCurrency } from "@/lib/utils";
-import { addDays, endOfDay, endOfMonth, endOfWeek, endOfYear, format, startOfDay, startOfMonth, startOfWeek, startOfYear } from "date-fns";
+import { addDays, endOfDay, endOfMonth, endOfWeek, endOfYear, format, startOfDay, startOfMonth, startOfWeek, startOfYear, subMonths } from "date-fns";
+import { ArrowDown, ArrowUp, DollarSign, TrendingDown, TrendingUp } from "lucide-react";
 import * as React from "react";
 import { useState } from "react";
-import { Area, AreaChart, Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis, Pie, PieChart, Cell } from "recharts";
-import { ArrowDown, ArrowUp, TrendingDown, TrendingUp } from "lucide-react";
+import { Area, AreaChart, Bar, BarChart, CartesianGrid, LabelList, RadialBar, RadialBarChart, ResponsiveContainer, XAxis, YAxis } from "recharts";
 
 const CHART_COLORS = {
-    income: {
-        light: "hsl(142.1 76.2% 36.3%)",
-        dark: "hsl(142.1 70.6% 45.3%)",
-    },
-    expense: {
-        light: "hsl(346.8 77.2% 49.8%)",
-        dark: "hsl(346.8 77.2% 49.8%)",
-    },
+    income: "hsl(var(--chart-1))",
+    expense: "hsl(var(--chart-2))",
+    savings: "hsl(var(--chart-3))",
+    investment: "hsl(var(--chart-4))",
+    other: "hsl(var(--chart-5))",
 };
-
-const PIE_COLORS = ["#22c55e", "#ef4444", "#3b82f6", "#f59e0b", "#8b5cf6", "#ec4899", "#06b6d4", "#6366f1", "#14b8a6", "#6b7280"];
 
 const chartConfig = {
     income: {
         label: "Income",
-        color: CHART_COLORS.income.light,
+        color: CHART_COLORS.income,
     },
     expense: {
         label: "Expense",
-        color: CHART_COLORS.expense.light,
+        color: CHART_COLORS.expense,
     },
 } satisfies ChartConfig;
 
@@ -136,26 +133,6 @@ export default function AnalyticsPage() {
         }));
     }, [filteredTransactions, currentSpace?.categories]);
 
-    const pieChartData = React.useMemo(() => {
-        const incomeData = categoryBreakdown
-            .filter((cat) => cat.income > 0)
-            .map((cat) => ({
-                name: cat.name,
-                value: cat.income,
-                type: "Income",
-            }));
-
-        const expenseData = categoryBreakdown
-            .filter((cat) => cat.expense > 0)
-            .map((cat) => ({
-                name: cat.name,
-                value: cat.expense,
-                type: "Expense",
-            }));
-
-        return { income: incomeData, expense: expenseData };
-    }, [categoryBreakdown]);
-
     const dailyData = React.useMemo(() => {
         const data: Record<string, { date: string; income: number; expense: number }> = {};
         const days = Math.ceil((date.to.getTime() - date.from.getTime()) / (1000 * 60 * 60 * 24));
@@ -189,10 +166,61 @@ export default function AnalyticsPage() {
         return ((current - previous) / previous) * 100;
     };
 
+    // New data processing functions
+    const monthlyComparison = React.useMemo(() => {
+        const lastSixMonths = Array.from({ length: 6 }, (_, i) => {
+            const date = subMonths(new Date(), i);
+            return {
+                month: format(date, "MMM yyyy"),
+                income: 0,
+                expense: 0,
+                transactions: 0,
+            };
+        }).reverse();
+
+        transactions.forEach((t: Transaction) => {
+            const transactionMonth = format(new Date(t.date), "MMM yyyy");
+            const monthData = lastSixMonths.find((m) => m.month === transactionMonth);
+            if (monthData) {
+                if (t.type === "Income") monthData.income += t.amount;
+                else monthData.expense += t.amount;
+                monthData.transactions++;
+            }
+        });
+
+        return lastSixMonths;
+    }, [transactions]);
+
+    const topCategories = React.useMemo(() => {
+        return categoryBreakdown
+            .sort((a, b) => b.expense - a.expense)
+            .slice(0, 5)
+            .map((cat) => ({
+                ...cat,
+                percentage: (cat.expense / totalExpense) * 100,
+            }));
+    }, [categoryBreakdown, totalExpense]);
+
+    const transactionStats = React.useMemo(() => {
+        const avgTransactionAmount = filteredTransactions.reduce((acc, t) => acc + t.amount, 0) / filteredTransactions.length;
+        const maxTransaction = Math.max(...filteredTransactions.map((t) => t.amount));
+        const transactionsPerDay = filteredTransactions.length / ((date.to.getTime() - date.from.getTime()) / (1000 * 60 * 60 * 24));
+
+        return {
+            avgAmount: avgTransactionAmount || 0,
+            maxAmount: maxTransaction || 0,
+            perDay: transactionsPerDay || 0,
+            total: filteredTransactions.length,
+        };
+    }, [filteredTransactions, date]);
+
     return (
-        <div className="space-y-4">
+        <div className="space-y-8">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <h2 className="text-3xl font-bold tracking-tight">Analytics</h2>
+                <div>
+                    <h2 className="text-3xl font-bold tracking-tight">Analytics</h2>
+                    <p className="text-muted-foreground">Financial overview and insights</p>
+                </div>
                 <DateRangePickerInput className="w-full sm:w-fit" value={date} onChange={setDate} align="end" />
             </div>
 
@@ -200,20 +228,13 @@ export default function AnalyticsPage() {
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">Total Income</CardTitle>
-                        <TrendingUp className="h-4 w-4 text-green-600" />
+                        <DollarSign className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold text-green-600">{formatCurrency(totalIncome, currentSpace?.currency)}</div>
+                        <div className="text-2xl font-bold">{formatCurrency(totalIncome, currentSpace?.currency)}</div>
                         <div className="flex items-center text-xs text-muted-foreground mt-1">
-                            {getPercentageChange(totalIncome, previousPeriodData.income) > 0 ? (
-                                <ArrowUp className="h-3 w-3 text-green-600 mr-1" />
-                            ) : (
-                                <ArrowDown className="h-3 w-3 text-red-600 mr-1" />
-                            )}
-                            <span className={cn(getPercentageChange(totalIncome, previousPeriodData.income) > 0 ? "text-green-600" : "text-red-600")}>
-                                {Math.abs(getPercentageChange(totalIncome, previousPeriodData.income)).toFixed(1)}%
-                            </span>
-                            <span className="ml-1">from previous period</span>
+                            <TrendingUp className="h-3 w-3 mr-1" />
+                            <span>{Math.abs(getPercentageChange(totalIncome, previousPeriodData.income)).toFixed(1)}% from previous</span>
                         </div>
                     </CardContent>
                 </Card>
@@ -252,55 +273,32 @@ export default function AnalyticsPage() {
                 </Card>
             </div>
 
-            <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
+            <div className="grid gap-8 grid-cols-1 lg:grid-cols-2">
                 <Card>
                     <CardHeader>
                         <CardTitle>Daily Overview</CardTitle>
+                        <CardDescription>Income vs Expense trend</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <ChartContainer className="h-[300px]" config={chartConfig}>
-                            <ResponsiveContainer width="100%" height="100%">
-                                <AreaChart data={dailyData} margin={{ top: 10, right: 10, bottom: 10, left: 10 }}>
+                        <ChartContainer config={chartConfig} className="h-[300px]">
+                            <ResponsiveContainer>
+                                <AreaChart data={dailyData} margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>
                                     <defs>
                                         <linearGradient id="income" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="5%" stopColor={CHART_COLORS.income.light} stopOpacity={0.3} />
-                                            <stop offset="95%" stopColor={CHART_COLORS.income.light} stopOpacity={0} />
+                                            <stop offset="5%" stopColor={CHART_COLORS.income} stopOpacity={0.1} />
+                                            <stop offset="95%" stopColor={CHART_COLORS.income} stopOpacity={0} />
                                         </linearGradient>
                                         <linearGradient id="expense" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="5%" stopColor={CHART_COLORS.expense.light} stopOpacity={0.3} />
-                                            <stop offset="95%" stopColor={CHART_COLORS.expense.light} stopOpacity={0} />
+                                            <stop offset="5%" stopColor={CHART_COLORS.expense} stopOpacity={0.1} />
+                                            <stop offset="95%" stopColor={CHART_COLORS.expense} stopOpacity={0} />
                                         </linearGradient>
                                     </defs>
                                     <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                                    <XAxis dataKey="date" tickFormatter={(date) => format(new Date(date), "MMM d")} className="text-xs" />
-                                    <YAxis tickFormatter={(value) => formatCurrency(value, currentSpace?.currency)} className="text-xs" />
-                                    <Tooltip
-                                        content={({ active, payload }) => {
-                                            if (!active || !payload) return null;
-                                            return (
-                                                <div className="rounded-lg border bg-background p-2 shadow-sm">
-                                                    <div className="grid gap-2">
-                                                        <div className="text-[0.70rem] font-medium">{format(new Date(payload[0]?.payload.date), "PPP")}</div>
-                                                        <div className="flex items-center justify-between gap-2">
-                                                            <span className="text-[0.70rem] uppercase text-muted-foreground">Income</span>
-                                                            <span className="text-[0.70rem] font-bold text-green-600">
-                                                                {formatCurrency(payload[0]?.value as number, currentSpace?.currency)}
-                                                            </span>
-                                                        </div>
-                                                        <div className="flex items-center justify-between gap-2">
-                                                            <span className="text-[0.70rem] uppercase text-muted-foreground">Expense</span>
-                                                            <span className="text-[0.70rem] font-bold text-red-600">
-                                                                {formatCurrency(payload[1]?.value as number, currentSpace?.currency)}
-                                                            </span>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            );
-                                        }}
-                                    />
-                                    <Legend />
-                                    <Area type="monotone" dataKey="income" name="Income" stroke={CHART_COLORS.income.light} fill="url(#income)" />
-                                    <Area type="monotone" dataKey="expense" name="Expense" stroke={CHART_COLORS.expense.light} fill="url(#expense)" />
+                                    <XAxis dataKey="date" tickFormatter={(date) => format(new Date(date), "MMM d")} />
+                                    <YAxis tickFormatter={(value) => formatCurrency(value, currentSpace?.currency)} />
+                                    <ChartTooltip content={<ChartTooltipContent />} />
+                                    <Area type="monotone" dataKey="income" stroke={CHART_COLORS.income} fill="url(#income)" />
+                                    <Area type="monotone" dataKey="expense" stroke={CHART_COLORS.expense} fill="url(#expense)" />
                                 </AreaChart>
                             </ResponsiveContainer>
                         </ChartContainer>
@@ -309,42 +307,19 @@ export default function AnalyticsPage() {
 
                 <Card>
                     <CardHeader>
-                        <CardTitle>Category Breakdown</CardTitle>
+                        <CardTitle>Monthly Comparison</CardTitle>
+                        <CardDescription>Last 6 months trend</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <ChartContainer className="h-[300px]" config={chartConfig}>
-                            <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={categoryBreakdown} margin={{ top: 10, right: 10, bottom: 10, left: 10 }}>
+                        <ChartContainer config={chartConfig} className="h-[300px]">
+                            <ResponsiveContainer>
+                                <BarChart data={monthlyComparison} margin={{ top: 5, right: 5, bottom: 20, left: 5 }}>
                                     <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                                    <XAxis dataKey="name" className="text-xs" angle={-45} textAnchor="end" height={60} />
-                                    <YAxis tickFormatter={(value) => formatCurrency(value, currentSpace?.currency)} className="text-xs" />
-                                    <Tooltip
-                                        content={({ active, payload }) => {
-                                            if (!active || !payload) return null;
-                                            return (
-                                                <div className="rounded-lg border bg-background p-2 shadow-sm">
-                                                    <div className="grid gap-2">
-                                                        <div className="text-[0.70rem] font-medium">{payload[0]?.payload.name}</div>
-                                                        <div className="flex items-center justify-between gap-2">
-                                                            <span className="text-[0.70rem] uppercase text-muted-foreground">Income</span>
-                                                            <span className="text-[0.70rem] font-bold text-green-600">
-                                                                {formatCurrency(payload[0]?.value as number, currentSpace?.currency)}
-                                                            </span>
-                                                        </div>
-                                                        <div className="flex items-center justify-between gap-2">
-                                                            <span className="text-[0.70rem] uppercase text-muted-foreground">Expense</span>
-                                                            <span className="text-[0.70rem] font-bold text-red-600">
-                                                                {formatCurrency(payload[1]?.value as number, currentSpace?.currency)}
-                                                            </span>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            );
-                                        }}
-                                    />
-                                    <Legend />
-                                    <Bar dataKey="income" name="Income" fill={CHART_COLORS.income.light} />
-                                    <Bar dataKey="expense" name="Expense" fill={CHART_COLORS.expense.light} />
+                                    <XAxis dataKey="month" angle={-45} textAnchor="end" height={60} />
+                                    <YAxis tickFormatter={(value) => formatCurrency(value, currentSpace?.currency)} />
+                                    <ChartTooltip content={<ChartTooltipContent />} />
+                                    <Bar dataKey="income" fill={CHART_COLORS.income} />
+                                    <Bar dataKey="expense" fill={CHART_COLORS.expense} />
                                 </BarChart>
                             </ResponsiveContainer>
                         </ChartContainer>
@@ -352,94 +327,111 @@ export default function AnalyticsPage() {
                 </Card>
             </div>
 
-            <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
+            <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
                 <Card>
                     <CardHeader>
-                        <CardTitle>Income Distribution</CardTitle>
+                        <CardTitle>Top Spending Categories</CardTitle>
+                        <CardDescription>Highest expense categories</CardDescription>
                     </CardHeader>
-                    <CardContent>
-                        <ChartContainer className="h-[300px]" config={chartConfig}>
-                            <ResponsiveContainer width="100%" height="100%">
-                                <PieChart>
-                                    <Pie
-                                        data={pieChartData.income}
-                                        dataKey="value"
-                                        nameKey="name"
-                                        cx="50%"
-                                        cy="50%"
-                                        outerRadius={100}
-                                        label={(entry) => `${entry.name} (${((entry.value / totalIncome) * 100).toFixed(1)}%)`}
-                                    >
-                                        {pieChartData.income.map((_, index) => (
-                                            <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
-                                        ))}
-                                    </Pie>
-                                    <Tooltip formatter={(value: number) => formatCurrency(value, currentSpace?.currency)} />
-                                </PieChart>
-                            </ResponsiveContainer>
-                        </ChartContainer>
-                    </CardContent>
-                </Card>
-
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Expense Distribution</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <ChartContainer className="h-[300px]" config={chartConfig}>
-                            <ResponsiveContainer width="100%" height="100%">
-                                <PieChart>
-                                    <Pie
-                                        data={pieChartData.expense}
-                                        dataKey="value"
-                                        nameKey="name"
-                                        cx="50%"
-                                        cy="50%"
-                                        outerRadius={100}
-                                        label={(entry) => `${entry.name} (${((entry.value / totalExpense) * 100).toFixed(1)}%)`}
-                                    >
-                                        {pieChartData.expense.map((_, index) => (
-                                            <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
-                                        ))}
-                                    </Pie>
-                                    <Tooltip formatter={(value: number) => formatCurrency(value, currentSpace?.currency)} />
-                                </PieChart>
-                            </ResponsiveContainer>
-                        </ChartContainer>
-                    </CardContent>
-                </Card>
-            </div>
-
-            <div className="overflow-x-auto">
-                <div className="min-w-[600px]">
-                    <div className="grid grid-cols-4 text-sm font-medium text-muted-foreground">
-                        <div>Category</div>
-                        <div className="text-right">Income</div>
-                        <div className="text-right">Expense</div>
-                        <div className="text-right">Net</div>
-                    </div>
-                    <div className="space-y-2">
-                        {categoryBreakdown.map((category) => (
-                            <div key={category.name} className="grid grid-cols-4 text-sm items-center">
-                                <div className="font-medium">{category.name}</div>
-                                <div className="text-right text-green-600">{formatCurrency(category.income, currentSpace?.currency)}</div>
-                                <div className="text-right text-red-600">{formatCurrency(category.expense, currentSpace?.currency)}</div>
-                                <div className={cn("text-right font-medium", category.total >= 0 ? "text-green-600" : "text-red-600")}>
-                                    {formatCurrency(category.total, currentSpace?.currency)}
+                    <CardContent className="space-y-4">
+                        {topCategories.map((category) => (
+                            <div key={category.name} className="space-y-2">
+                                <div className="flex items-center justify-between text-sm">
+                                    <span>{category.name}</span>
+                                    <span className="font-medium">{formatCurrency(category.expense, currentSpace?.currency)}</span>
                                 </div>
+                                <Progress value={category.percentage} className="h-2" />
+                                <p className="text-xs text-muted-foreground">{category.percentage.toFixed(1)}% of total expenses</p>
                             </div>
                         ))}
-                    </div>
-                    <div className="border-t pt-2 grid grid-cols-4 text-sm font-medium">
-                        <div>Total</div>
-                        <div className="text-right text-green-600">{formatCurrency(totalIncome, currentSpace?.currency)}</div>
-                        <div className="text-right text-red-600">{formatCurrency(totalExpense, currentSpace?.currency)}</div>
-                        <div className={cn("text-right", totalIncome - totalExpense >= 0 ? "text-green-600" : "text-red-600")}>
-                            {formatCurrency(totalIncome - totalExpense, currentSpace?.currency)}
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Transaction Statistics</CardTitle>
+                        <CardDescription>Transaction patterns and averages</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <p className="text-sm text-muted-foreground">Average Amount</p>
+                                <p className="text-2xl font-bold">{formatCurrency(transactionStats.avgAmount, currentSpace?.currency)}</p>
+                            </div>
+                            <div className="space-y-2">
+                                <p className="text-sm text-muted-foreground">Largest Transaction</p>
+                                <p className="text-2xl font-bold">{formatCurrency(transactionStats.maxAmount, currentSpace?.currency)}</p>
+                            </div>
+                            <div className="space-y-2">
+                                <p className="text-sm text-muted-foreground">Transactions/Day</p>
+                                <p className="text-2xl font-bold">{transactionStats.perDay.toFixed(1)}</p>
+                            </div>
+                            <div className="space-y-2">
+                                <p className="text-sm text-muted-foreground">Total Transactions</p>
+                                <p className="text-2xl font-bold">{transactionStats.total}</p>
+                            </div>
                         </div>
-                    </div>
-                </div>
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Category Distribution</CardTitle>
+                        <CardDescription>Spending by category</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <ChartContainer config={chartConfig} className="mx-auto aspect-square max-h-[300px]">
+                            <ResponsiveContainer>
+                                <RadialBarChart data={categoryBreakdown} startAngle={90} endAngle={-270} innerRadius="20%" outerRadius="100%">
+                                    <RadialBar dataKey="expense" background fill={CHART_COLORS.expense}>
+                                        <LabelList position="insideStart" dataKey="name" className="fill-foreground capitalize" fontSize={11} />
+                                    </RadialBar>
+                                    <ChartTooltip content={<ChartTooltipContent />} />
+                                </RadialBarChart>
+                            </ResponsiveContainer>
+                        </ChartContainer>
+                    </CardContent>
+                </Card>
             </div>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle>Category Breakdown</CardTitle>
+                    <CardDescription>Detailed view of income and expenses by category</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Category</TableHead>
+                                <TableHead className="text-right">Income</TableHead>
+                                <TableHead className="text-right">Expense</TableHead>
+                                <TableHead className="text-right">Net</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {categoryBreakdown.map((category) => (
+                                <TableRow key={category.name}>
+                                    <TableCell className="font-medium">{category.name}</TableCell>
+                                    <TableCell className="text-right text-green-600">{formatCurrency(category.income, currentSpace?.currency)}</TableCell>
+                                    <TableCell className="text-right text-red-600">{formatCurrency(category.expense, currentSpace?.currency)}</TableCell>
+                                    <TableCell className={cn("text-right font-medium", category.total >= 0 ? "text-green-600" : "text-red-600")}>
+                                        {formatCurrency(category.total, currentSpace?.currency)}
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                            <TableRow className="font-medium">
+                                <TableCell>Total</TableCell>
+                                <TableCell className="text-right text-green-600">{formatCurrency(totalIncome, currentSpace?.currency)}</TableCell>
+                                <TableCell className="text-right text-red-600">{formatCurrency(totalExpense, currentSpace?.currency)}</TableCell>
+                                <TableCell className={cn("text-right", totalIncome - totalExpense >= 0 ? "text-green-600" : "text-red-600")}>
+                                    {formatCurrency(totalIncome - totalExpense, currentSpace?.currency)}
+                                </TableCell>
+                            </TableRow>
+                        </TableBody>
+                    </Table>
+                </CardContent>
+            </Card>
         </div>
     );
 }
