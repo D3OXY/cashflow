@@ -34,6 +34,13 @@ const chartConfig = {
     },
 } satisfies ChartConfig;
 
+function getDateAggregation(from: Date, to: Date): "daily" | "weekly" | "monthly" {
+    const diffInDays = Math.ceil((to.getTime() - from.getTime()) / (1000 * 60 * 60 * 24));
+    if (diffInDays <= 31) return "daily";
+    if (diffInDays <= 90) return "weekly";
+    return "monthly";
+}
+
 export default function AnalyticsPage() {
     const { currentSpace } = useSpace();
     const { transactions } = useTransaction();
@@ -133,28 +140,53 @@ export default function AnalyticsPage() {
         }));
     }, [filteredTransactions, currentSpace?.categories]);
 
-    const dailyData = React.useMemo(() => {
+    const timeSeriesData = React.useMemo(() => {
+        const aggregationType = getDateAggregation(date.from, date.to);
         const data: Record<string, { date: string; income: number; expense: number }> = {};
-        const days = Math.ceil((date.to.getTime() - date.from.getTime()) / (1000 * 60 * 60 * 24));
 
-        // Initialize all dates in range
-        for (let i = 0; i <= days; i++) {
-            const currentDate = addDays(date.from, i);
-            const dateStr = format(currentDate, "yyyy-MM-dd");
-            data[dateStr] = {
-                date: dateStr,
-                income: 0,
-                expense: 0,
-            };
+        // Initialize periods
+        if (aggregationType === "daily") {
+            const days = Math.ceil((date.to.getTime() - date.from.getTime()) / (1000 * 60 * 60 * 24));
+            for (let i = 0; i <= days; i++) {
+                const currentDate = addDays(date.from, i);
+                const dateStr = format(currentDate, "yyyy-MM-dd");
+                data[dateStr] = { date: dateStr, income: 0, expense: 0 };
+            }
+        } else if (aggregationType === "weekly") {
+            let currentDate = startOfWeek(date.from);
+            while (currentDate <= date.to) {
+                const dateStr = format(currentDate, "yyyy-'W'ww");
+                data[dateStr] = { date: dateStr, income: 0, expense: 0 };
+                currentDate = addDays(currentDate, 7);
+            }
+        } else {
+            let currentDate = startOfMonth(date.from);
+            while (currentDate <= date.to) {
+                const dateStr = format(currentDate, "yyyy-MM");
+                data[dateStr] = { date: dateStr, income: 0, expense: 0 };
+                currentDate = addDays(currentDate, 31);
+            }
         }
 
         // Fill in transaction data
         filteredTransactions.forEach((transaction: Transaction) => {
-            const dateStr = format(new Date(transaction.date), "yyyy-MM-dd");
-            if (transaction.type === "Income") {
-                data[dateStr].income += transaction.amount;
+            const transactionDate = new Date(transaction.date);
+            let dateStr: string;
+
+            if (aggregationType === "daily") {
+                dateStr = format(transactionDate, "yyyy-MM-dd");
+            } else if (aggregationType === "weekly") {
+                dateStr = format(startOfWeek(transactionDate), "yyyy-'W'ww");
             } else {
-                data[dateStr].expense += transaction.amount;
+                dateStr = format(transactionDate, "yyyy-MM");
+            }
+
+            if (data[dateStr]) {
+                if (transaction.type === "Income") {
+                    data[dateStr].income += transaction.amount;
+                } else {
+                    data[dateStr].expense += transaction.amount;
+                }
             }
         });
 
@@ -276,13 +308,19 @@ export default function AnalyticsPage() {
             <div className="grid gap-8 grid-cols-1 lg:grid-cols-2">
                 <Card>
                     <CardHeader>
-                        <CardTitle>Daily Overview</CardTitle>
-                        <CardDescription>Income vs Expense trend</CardDescription>
+                        <CardTitle>Overview</CardTitle>
+                        <CardDescription>
+                            {getDateAggregation(date.from, date.to) === "daily"
+                                ? "Daily transactions"
+                                : getDateAggregation(date.from, date.to) === "weekly"
+                                ? "Weekly aggregated transactions"
+                                : "Monthly aggregated transactions"}
+                        </CardDescription>
                     </CardHeader>
                     <CardContent>
                         <ChartContainer config={chartConfig} className="h-[300px]">
                             <ResponsiveContainer>
-                                <AreaChart data={dailyData} margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>
+                                <AreaChart data={timeSeriesData} margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>
                                     <defs>
                                         <linearGradient id="income" x1="0" y1="0" x2="0" y2="1">
                                             <stop offset="5%" stopColor={CHART_COLORS.income} stopOpacity={0.1} />
@@ -294,9 +332,59 @@ export default function AnalyticsPage() {
                                         </linearGradient>
                                     </defs>
                                     <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                                    <XAxis dataKey="date" tickFormatter={(date) => format(new Date(date), "MMM d")} />
+                                    <XAxis
+                                        dataKey="date"
+                                        tickFormatter={(dateStr) => {
+                                            const aggregationType = getDateAggregation(date.from, date.to);
+                                            if (aggregationType === "daily") {
+                                                return format(new Date(dateStr), "MMM d");
+                                            } else if (aggregationType === "weekly") {
+                                                return `Week ${dateStr.split("W")[1]}`;
+                                            } else {
+                                                return format(new Date(dateStr + "-01"), "MMM yyyy");
+                                            }
+                                        }}
+                                        angle={-45}
+                                        textAnchor="end"
+                                        height={60}
+                                    />
                                     <YAxis tickFormatter={(value) => formatCurrency(value, currentSpace?.currency)} />
-                                    <ChartTooltip content={<ChartTooltipContent />} />
+                                    <ChartTooltip
+                                        content={({ active, payload }) => {
+                                            if (!active || !payload) return null;
+                                            const aggregationType = getDateAggregation(date.from, date.to);
+                                            const dateStr = payload[0]?.payload.date;
+                                            let displayDate: string;
+
+                                            if (aggregationType === "daily") {
+                                                displayDate = format(new Date(dateStr), "PPP");
+                                            } else if (aggregationType === "weekly") {
+                                                displayDate = `Week ${dateStr.split("W")[1]}`;
+                                            } else {
+                                                displayDate = format(new Date(dateStr + "-01"), "MMMM yyyy");
+                                            }
+
+                                            return (
+                                                <div className="rounded-lg border bg-background p-2 shadow-sm">
+                                                    <div className="grid gap-2">
+                                                        <div className="text-[0.70rem] font-medium">{displayDate}</div>
+                                                        <div className="flex items-center justify-between gap-2">
+                                                            <span className="text-[0.70rem] uppercase text-muted-foreground">Income</span>
+                                                            <span className="text-[0.70rem] font-bold text-green-600">
+                                                                {formatCurrency(payload[0]?.value as number, currentSpace?.currency)}
+                                                            </span>
+                                                        </div>
+                                                        <div className="flex items-center justify-between gap-2">
+                                                            <span className="text-[0.70rem] uppercase text-muted-foreground">Expense</span>
+                                                            <span className="text-[0.70rem] font-bold text-red-600">
+                                                                {formatCurrency(payload[1]?.value as number, currentSpace?.currency)}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            );
+                                        }}
+                                    />
                                     <Area type="monotone" dataKey="income" stroke={CHART_COLORS.income} fill="url(#income)" />
                                     <Area type="monotone" dataKey="expense" stroke={CHART_COLORS.expense} fill="url(#expense)" />
                                 </AreaChart>
@@ -313,7 +401,7 @@ export default function AnalyticsPage() {
                     <CardContent>
                         <ChartContainer config={chartConfig} className="h-[300px]">
                             <ResponsiveContainer>
-                                <BarChart data={monthlyComparison} margin={{ top: 5, right: 5, bottom: 20, left: 5 }}>
+                                <BarChart data={monthlyComparison} margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>
                                     <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                                     <XAxis dataKey="month" angle={-45} textAnchor="end" height={60} />
                                     <YAxis tickFormatter={(value) => formatCurrency(value, currentSpace?.currency)} />
