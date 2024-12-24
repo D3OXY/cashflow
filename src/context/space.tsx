@@ -8,6 +8,7 @@ import type { Space } from "@/lib/types/space";
 import type { CreateSpaceData } from "@/lib/firebase/spaces";
 import { createSpaceInDb } from "@/lib/firebase/spaces";
 import { useRouter } from "next/navigation";
+import LoadingScreen from "@/components/loading-screen";
 
 interface SpaceContextType {
     spaces: Space[];
@@ -101,6 +102,8 @@ export function SpaceProvider({ children }: { children: React.ReactNode }) {
         // The onSnapshot listener will automatically handle updates
         // This function exists for backwards compatibility
     };
+
+    if (isLoading) return <LoadingScreen />;
 
     return (
         <SpaceContext.Provider

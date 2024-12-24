@@ -5,6 +5,7 @@ import type { User, UserCredential } from "firebase/auth";
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut as firebaseSignOut, onAuthStateChanged } from "firebase/auth";
 import { useAppConfig } from "@/context/app-config";
 import { initializeFirebase, getFirebase } from "@/lib/firebase/config";
+import LoadingScreen from "@/components/loading-screen";
 
 interface AuthContextValue {
     user: User | null;
@@ -15,17 +16,6 @@ interface AuthContextValue {
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
-
-function LoadingScreen() {
-    return (
-        <div className="flex min-h-screen items-center justify-center bg-background">
-            <div className="space-y-4 text-center">
-                <div className="text-4xl font-bold">Cashflow</div>
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-foreground mx-auto" />
-            </div>
-        </div>
-    );
-}
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
