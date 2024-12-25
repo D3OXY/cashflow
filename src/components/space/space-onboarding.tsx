@@ -40,7 +40,11 @@ export function SpaceOnboarding() {
         if (!name) return;
 
         try {
-            await createNewSpace({ name, currency });
+            await createNewSpace({
+                name,
+                currency,
+                icon: "💰",
+            });
             setShowDialog(false);
             toast.success("Space created successfully");
             router.push("/dashboard");

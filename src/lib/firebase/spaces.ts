@@ -33,7 +33,6 @@ export async function createSpaceInDb(data: CreateSpaceData, userId: string): Pr
             startOfWeek: 1,
             defaultTransactionType: "Expense",
             showRunningBalance: true,
-            categorySortOrder: "alphabetical",
         },
     };
 
