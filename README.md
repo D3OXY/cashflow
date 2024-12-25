@@ -2,7 +2,7 @@
 
 A privacy-focused, self-hostable expense tracking desktop application built with Tauri, NextJS, TypeScript, and Firebase. Cashflow empowers users to manage finances across multiple spaces while giving them full control of their data by utilizing their own Firebase account.
 
-![Cashflow Preview](./cashflow.png)
+![Cashflow Preview](./public/cashflow.png)
 
 ## Features
 
