@@ -41,6 +41,15 @@ function getDateAggregation(from: Date, to: Date): "daily" | "weekly" | "monthly
     return "monthly";
 }
 
+// Add this helper function to calculate tick count
+function getTickCount(from: Date, to: Date): number {
+    const diffInDays = Math.ceil((to.getTime() - from.getTime()) / (1000 * 60 * 60 * 24));
+    if (diffInDays <= 7) return diffInDays; // Show all points for a week or less
+    if (diffInDays <= 31) return 7; // Show ~7 points for a month
+    if (diffInDays <= 90) return 12; // Show ~12 points for 3 months
+    return 15; // Show max 15 points for longer periods
+}
+
 export default function AnalyticsPage() {
     const { currentSpace } = useSpace();
     const { transactions } = useTransaction();
@@ -346,8 +355,10 @@ export default function AnalyticsPage() {
                                     angle={-45}
                                     textAnchor="end"
                                     height={60}
+                                    interval={"preserveStartEnd"}
+                                    tickCount={getTickCount(date.from, date.to)}
                                 />
-                                <YAxis tickFormatter={(value) => formatCurrency(value, currentSpace?.currency)} />
+                                <YAxis tickFormatter={(value) => formatCurrency(value, currentSpace?.currency)} width={80} />
                                 <ChartTooltip
                                     content={({ active, payload }) => {
                                         if (!active || !payload) return null;
@@ -402,8 +413,8 @@ export default function AnalyticsPage() {
                         <ResponsiveContainer width="100%" height="100%">
                             <BarChart data={monthlyComparison} margin={{ top: 10, right: 30, bottom: 30, left: 50 }}>
                                 <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                                <XAxis dataKey="month" angle={-45} textAnchor="end" height={60} />
-                                <YAxis tickFormatter={(value) => formatCurrency(value, currentSpace?.currency)} />
+                                <XAxis dataKey="month" angle={-45} textAnchor="end" height={60} interval={0} />
+                                <YAxis tickFormatter={(value) => formatCurrency(value, currentSpace?.currency)} width={80} />
                                 <ChartTooltip content={<ChartTooltipContent />} />
                                 <Bar dataKey="income" fill={CHART_COLORS.income} />
                                 <Bar dataKey="expense" fill={CHART_COLORS.expense} />
