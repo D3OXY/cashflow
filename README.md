@@ -15,7 +15,7 @@ A privacy-focused, self-hostable expense tracking desktop application built with
 
 ### Option 1: Download from Releases
 
-1. Visit the [Releases](https://github.com/your-repo/releases) page.
+1. Visit the [Releases](https://github.com/d3oxy/cashflow/releases) page.
 2. Download the latest version for your operating system.
 3. Extract and run the application.
 4. On the first launch:
@@ -26,7 +26,7 @@ A privacy-focused, self-hostable expense tracking desktop application built with
 
 1. Clone the repository:
     ```bash
-    git clone https://github.com/your-repo.git
+    git clone https://github.com/d3oxy/cashflow.git
     cd cashflow
     ```
 2. Install dependencies:
