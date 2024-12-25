@@ -25,7 +25,7 @@ export function InitializationWrapper({ children }: { children: React.ReactNode 
     const pathname = usePathname();
     const { isInitialized, isLoading: isConfigLoading } = useAppConfig();
     const { user, isLoading: isAuthLoading } = useAuth();
-    const { loading: isSpaceLoading } = useSpace();
+    const { isLoading: isSpaceLoading } = useSpace();
     const [isRouteReady, setIsRouteReady] = useState(false);
 
     const isPublicPath = PUBLIC_PATHS.includes(pathname);
