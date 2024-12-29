@@ -44,6 +44,11 @@ class AppStore {
         const config = await this.getAppConfig();
         return Boolean(config?.isInitialized && config?.firebase);
     }
+
+    async reset(): Promise<void> {
+        await this.store.clear();
+        await this.store.save();
+    }
 }
 
 export const appStore = AppStore.getInstance();

@@ -16,11 +16,15 @@ import { getDb } from "@/lib/firebase/config";
 import { Loader2 } from "lucide-react";
 import { PROFILE_IMAGES } from "@/lib/constants";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { useAppConfig } from "@/context/app-config";
 
 export function UserSettings() {
     const { theme, setTheme } = useTheme();
-    const { user } = useAuth();
+    const { user, signOut } = useAuth();
+    const { resetConfig } = useAppConfig();
     const [isUpdating, setIsUpdating] = useState(false);
+    const [isResetting, setIsResetting] = useState(false);
     const [displayName, setDisplayName] = useState(user?.displayName || "");
     const [selectedAvatar, setSelectedAvatar] = useState<string>(user?.photoURL || PROFILE_IMAGES[0].url);
 
@@ -68,6 +72,20 @@ export function UserSettings() {
             toast.error("Failed to update profile");
         } finally {
             setIsUpdating(false);
+        }
+    };
+
+    const handleReset = async () => {
+        try {
+            setIsResetting(true);
+            await signOut();
+            await resetConfig();
+            toast.success("App reset successful");
+        } catch (error) {
+            console.error("Error resetting app:", error);
+            toast.error("Failed to reset app");
+        } finally {
+            setIsResetting(false);
         }
     };
 
@@ -142,6 +160,34 @@ export function UserSettings() {
                             </SelectContent>
                         </Select>
                     </div>
+                </CardContent>
+            </Card>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle>Danger Zone</CardTitle>
+                    <CardDescription>Actions that will reset your app data.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <Dialog>
+                        <DialogTrigger asChild>
+                            <Button variant="destructive">Reset App</Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                            <DialogHeader>
+                                <DialogTitle>Reset App</DialogTitle>
+                                <DialogDescription>
+                                    This will clear all locally stored data including your Firebase configuration. You&apos;ll need to re-enter your Firebase configuration to use
+                                    the app again. This action cannot be undone.
+                                </DialogDescription>
+                            </DialogHeader>
+                            <DialogFooter>
+                                <Button variant="destructive" onClick={handleReset} disabled={isResetting}>
+                                    {isResetting ? "Resetting..." : "Yes, Reset App"}
+                                </Button>
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
                 </CardContent>
             </Card>
         </div>
